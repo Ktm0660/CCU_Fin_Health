@@ -21,6 +21,23 @@ export default function Assessment() {
   const q = questions[i];
   const done = Object.keys(answers).length === questions.length;
 
+  // Persist progress locally for mobile
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("ccu_assessment");
+      if (raw) {
+        const { a, idx } = JSON.parse(raw);
+        setAnswers(a || {});
+        setI(typeof idx === "number" ? idx : 0);
+      }
+    } catch {}
+  }, []);
+  useEffect(() => {
+    try {
+      localStorage.setItem("ccu_assessment", JSON.stringify({ a: answers, idx: i }));
+    } catch {}
+  }, [answers, i]);
+
   useEffect(() => {
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   }, [i]);
@@ -34,25 +51,25 @@ export default function Assessment() {
   function back() { setI((prev) => Math.max(prev - 1, 0)); }
   function goResults() { push({ pathname: "/results", query: { a: JSON.stringify(answers) } }); }
 
-  const t = (en: string, es: string) => (loc === "en" ? en : es);
+  const tr = (en: string, es: string) => (loc === "en" ? en : es);
 
   return (
     <section>
       <h1 className="text-2xl font-semibold text-ink-900 mb-2">
-        {t("Connections Financial Health & Trust Assessment", "Evaluación de Salud Financiera y Confianza")}
+        {tr("Connections Financial Health & Trust Assessment", "Evaluación de Salud Financiera y Confianza")}
       </h1>
 
-      {/* Progress header only (no scores) */}
+      {/* Progress header only (quiet mode) */}
       <div className="mb-4 flex items-center justify-between text-sm text-slate-700">
         <span>
-          {t("Question", "Pregunta")} {i + 1} {t("of", "de")} {questions.length}
+          {tr("Question", "Pregunta")} {i + 1} {tr("of", "de")} {questions.length}
         </span>
         <div className="w-1/2">
           <Bar value={i + 1} max={questions.length} />
         </div>
       </div>
 
-      {/* Question-only card (quiet mode) */}
+      {/* Question-only card */}
       {q && (
         <QuestionCard
           q={q}
@@ -64,8 +81,8 @@ export default function Assessment() {
 
       {/* Navigation buttons */}
       <div className="flex gap-3">
-        <button onClick={back} disabled={i === 0} className="px-4 py-2 rounded-xl border disabled:opacity-50">
-          {t("Back", "Atrás")}
+        <button onClick={back} disabled={i === 0} className="px-4 py-3 rounded-xl border disabled:opacity-50">
+          {tr("Back", "Atrás")}
         </button>
         {i < questions.length - 1 ? (
           <button
@@ -73,14 +90,14 @@ export default function Assessment() {
               if (q && answers[q.id] === undefined) return;
               next();
             }}
-            className="px-4 py-2 rounded-xl bg-brand-500 text-white disabled:bg-slate-300"
+            className="px-4 py-3 rounded-xl bg-brand-500 text-white disabled:bg-slate-300"
             disabled={q ? answers[q.id] === undefined : true}
           >
-            {t("Next", "Siguiente")}
+            {tr("Next", "Siguiente")}
           </button>
         ) : (
-          <button onClick={goResults} className="px-4 py-2 rounded-xl bg-brand-500 text-white" disabled={!done}>
-            {t("See my results", "Ver mis resultados")}
+          <button onClick={goResults} className="px-4 py-3 rounded-xl bg-brand-500 text-white" disabled={!done}>
+            {tr("See my results", "Ver mis resultados")}
           </button>
         )}
       </div>

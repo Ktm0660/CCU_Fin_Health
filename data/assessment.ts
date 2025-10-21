@@ -100,12 +100,14 @@ const questions: Question[] = [
                o("No account right now.","No tengo actualmente.",0,-2,-2) ]
   },
   { id: "q12",
-    text_en: "How comfortable talking to financial institutions?",
-    text_es: "¿Qué tan cómodo te sientes al hablar con instituciones financieras?",
-    options: [ o("Very comfortable—understood.","Muy cómodo—me entienden.",2,3,1),
-               o("Depends on the person.","Depende de la persona.",1,1,0),
-               o("Not comfortable—judged.","Incómodo—me juzgan.",0,-2,0),
-               o("I avoid it—don’t trust.","Lo evito—no confío.",0,-3,0) ]
+    text_en: "When you talk to a bank or credit union about money, how do you usually feel?",
+    text_es: "Cuando hablas con un banco o cooperativa sobre dinero, ¿cómo sueles sentirte?",
+    options: [
+      { text_en: "Very comfortable — I feel understood.", text_es: "Muy cómodo: me siento comprendido.", weights: { habits:2, confidence:3, stability:1 } },
+      { text_en: "It depends on the person.", text_es: "Depende de la persona.", weights: { habits:1, confidence:1, stability:0 } },
+      { text_en: "Not comfortable — I feel judged.", text_es: "Incómodo: siento que me juzgan.", weights: { habits:0, confidence:-2, stability:0 } },
+      { text_en: "I avoid it — I don’t trust they will help.", text_es: "Lo evito: no confío en que me ayuden.", weights: { habits:0, confidence:-3, stability:0 } }
+    ]
   },
   { id: "q13",
     text_en: "What has made you hesitant to trust a bank/credit union?",
