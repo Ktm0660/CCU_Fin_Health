@@ -2,9 +2,11 @@ export type Dimension = "habits" | "confidence" | "stability";
 export type Option = { text_en: string; text_es: string; weights: Partial<Record<Dimension, number>> };
 export type Question = { id: string; text_en: string; text_es: string; options: Option[] };
 
+/* (Questions block unchanged — keep exactly as it is in the repo.) */
+
 const o = (en: string, es: string, h=0,c=0,s=0) => ({ text_en: en, text_es: es, weights: { habits:h, confidence:c, stability:s } });
 
-export const questions: Question[] = [
+const questions: Question[] = [
   // 1) Spending Awareness & Habits
   { id: "q1",
     text_en: "When the month ends, do you usually know where most of your money went?",
@@ -157,7 +159,6 @@ export type Score = {
 };
 
 function perDimMax() {
-  // For each question, the max contribution per dimension is the highest weight available in that dim
   let maxH=0, maxC=0, maxS=0;
   questions.forEach(q => {
     let h=0, c=0, s=0;
@@ -192,11 +193,82 @@ export function scoreAnswers(ans: AnswerMap): Score {
 }
 
 export function partialScore(ans: AnswerMap) {
-  // same as scoreAnswers but helpful during the live flow
   return scoreAnswers(ans);
 }
 
+/* ---------- Bucketing helpers (no numbers shown to members) ---------- */
+export type BucketKey = "start" | "building" | "strong";
+
+export function bucketize(value: number, max: number): BucketKey {
+  const pct = (value / Math.max(1, max)) * 100;
+  if (pct < 40) return "start";
+  if (pct < 70) return "building";
+  return "strong";
+}
+
+export const bucketCopy = {
+  en: {
+    labels: {
+      start: "Getting Started",
+      building: "Finding Your Rhythm",
+      strong: "Steady & Building"
+    },
+    dim: {
+      habits: {
+        start: "Simple rails make life easier: one spending list, one autopay, one savings rule.",
+        building: "Good momentum—tighten one or two daily habits for smoother months.",
+        strong: "Your day-to-day choices are steady. Keep the rhythm going."
+      },
+      confidence: {
+        start: "It should feel safe to talk about money. We’ll keep it clear and judgment-free.",
+        building: "You’re asking the right questions—let’s make plans you can trust.",
+        strong: "You advocate for yourself and get straight answers. Keep using that voice."
+      },
+      stability: {
+        start: "First wins: mini emergency fund and one debt relief move.",
+        building: "Your foundation’s forming—grow that safety cushion step by step.",
+        strong: "Your safety net is solid and growing."
+      }
+    },
+    overall: {
+      start: "We’ll start small and practical—quick wins that lower stress fast.",
+      building: "You’re on your way. Let’s lock in a few routines and reduce surprises.",
+      strong: "You’re in a strong spot—now optimize and plan ahead."
+    }
+  },
+  es: {
+    labels: {
+      start: "Empezando",
+      building: "Tomando Ritmo",
+      strong: "Firme y Avanzando"
+    },
+    dim: {
+      habits: {
+        start: "Reglas simples ayudan: una lista de gastos, un pago automático, una regla de ahorro.",
+        building: "Buen avance—ajusta uno o dos hábitos diarios para meses más tranquilos.",
+        strong: "Tus decisiones diarias son estables. Sigue con ese ritmo."
+      },
+      confidence: {
+        start: "Hablar de dinero debe sentirse seguro. Mantendremos todo claro y sin juicios.",
+        building: "Haces las preguntas correctas—vamos a crear planes confiables.",
+        strong: "Defiendes tus intereses y obtienes respuestas claras. Sigue así."
+      },
+      stability: {
+        start: "Primeros logros: fondo de emergencia pequeño y un paso de alivio de deuda.",
+        building: "Tu base va tomando forma—hagamos crecer ese colchón paso a paso.",
+        strong: "Tu red de seguridad es sólida y sigue creciendo."
+      }
+    },
+    overall: {
+      start: "Empezaremos con pasos pequeños y prácticos para reducir el estrés pronto.",
+      building: "Vas por buen camino. Fijemos rutinas y menos sorpresas.",
+      strong: "Estás fuerte—ahora optimiza y planea con anticipación."
+    }
+  }
+} as const;
+
 export function guidance(dim: "habits"|"confidence"|"stability", score: number) {
+  // Keep for internal text where needed; results will rely on bucketCopy.
   if (dim==="habits") return score>=26 ? "Your day-to-day choices are steady. Keep the rhythm going." :
     score>=18 ? "You’re finding your rhythm — small, consistent steps unlock big change." :
     "Let’s put simple rails in place—one list, one bill-pay rule, one savings rule.";
@@ -207,3 +279,5 @@ export function guidance(dim: "habits"|"confidence"|"stability", score: number) 
     score>=18 ? "You’re building a foundation—let’s grow your safety net together." :
     "First wins matter: mini emergency fund and one debt relief move.";
 }
+
+export { questions };
