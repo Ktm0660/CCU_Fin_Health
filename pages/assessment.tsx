@@ -29,12 +29,16 @@ export default function Assessment() {
   const tip = useMemo(() => {
     if (q && chosenIdx !== undefined) {
       const w = q.options[chosenIdx].weights;
-      const pairs = [
-        ["habits", w.habits ?? 0],
-        ["confidence", w.confidence ?? 0],
-        ["stability", w.stability ?? 0],
-      ] as const;
-      const best = pairs.sort((a,b)=>b[1]-a[1])[0][0] as "habits"|"confidence"|"stability";
+      const scores = {
+        habits: w.habits ?? 0,
+        confidence: w.confidence ?? 0,
+        stability: w.stability ?? 0
+      } as const;
+
+      let best: "habits" | "confidence" | "stability" = "habits";
+      if (scores.confidence > scores[best]) best = "confidence";
+      if (scores.stability > scores[best]) best = "stability";
+
       return guidance(best, (s as any)[best]);
     }
     return "";
