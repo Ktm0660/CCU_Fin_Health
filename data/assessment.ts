@@ -1,4 +1,3 @@
-// Questions grouped into 5 sections; each answer maps to adjustments for Habits, Confidence, Stability (0-3)
 export type Dimension = "habits" | "confidence" | "stability";
 export type Option = { text_en: string; text_es: string; weights: Partial<Record<Dimension, number>> };
 export type Question = { id: string; text_en: string; text_es: string; options: Option[] };
@@ -151,25 +150,50 @@ export const questions: Question[] = [
 ];
 
 export type AnswerMap = Record<string, number>; // questionId -> option index
-export type Score = { habits: number; confidence: number; stability: number; totalMax: number };
+export type Score = {
+  habits: number; confidence: number; stability: number;
+  maxHabits: number; maxConfidence: number; maxStability: number;
+  total: number; totalMax: number;
+};
+
+function perDimMax() {
+  // For each question, the max contribution per dimension is the highest weight available in that dim
+  let maxH=0, maxC=0, maxS=0;
+  questions.forEach(q => {
+    let h=0, c=0, s=0;
+    q.options.forEach(o => {
+      h = Math.max(h, o.weights.habits ?? 0);
+      c = Math.max(c, o.weights.confidence ?? 0);
+      s = Math.max(s, o.weights.stability ?? 0);
+    });
+    maxH += h; maxC += c; maxS += s;
+  });
+  return { maxH, maxC, maxS };
+}
 
 export function scoreAnswers(ans: AnswerMap): Score {
-  let h=0,c=0,s=0, max=0;
+  let h=0,c=0,s=0;
   questions.forEach(q => {
-    const idx = ans[q.id] ?? -1;
-    q.options.forEach((opt, i) => {
-      // max per question = highest possible sum
-      const m = (opt.weights.habits??0)+(opt.weights.confidence??0)+(opt.weights.stability??0);
-      max = Math.max(max,0) + Math.max(0,m); // accumulate an optimistic max
-    });
-    if (idx>=0) {
+    const idx = ans[q.id];
+    if (idx !== undefined) {
       const w = q.options[idx].weights;
       h += w.habits ?? 0;
       c += w.confidence ?? 0;
       s += w.stability ?? 0;
     }
   });
-  return { habits:h, confidence:c, stability:s, totalMax:max };
+  const { maxH, maxC, maxS } = perDimMax();
+  return {
+    habits: h, confidence: c, stability: s,
+    maxHabits: maxH, maxConfidence: maxC, maxStability: maxS,
+    total: h + c + s,
+    totalMax: maxH + maxC + maxS
+  };
+}
+
+export function partialScore(ans: AnswerMap) {
+  // same as scoreAnswers but helpful during the live flow
+  return scoreAnswers(ans);
 }
 
 export function guidance(dim: "habits"|"confidence"|"stability", score: number) {
