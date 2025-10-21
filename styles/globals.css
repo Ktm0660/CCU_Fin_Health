@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --card: #ffffff;
+  --ring: #299a7f;
+}
+a { @apply text-brand-600 hover:text-brand-700 underline-offset-2; }
