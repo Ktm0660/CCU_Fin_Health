@@ -2,6 +2,7 @@ import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
 import { questions, AnswerMap } from "@/data/assessment";
 import QuestionCard from "@/components/QuestionCard";
+import SliderQuestionCard from "@/components/SliderQuestion";
 
 function Bar({ value, max }: { value: number; max: number }) {
   const pct = Math.max(0, Math.min(100, Math.round((value / Math.max(1, max)) * 100)));
@@ -17,11 +18,11 @@ export default function Assessment() {
   const loc = (locale as "en" | "es") || "en";
 
   const [answers, setAnswers] = useState<AnswerMap>({});
-  const [i, setI] = useState(0); // current question index
+  const [i, setI] = useState(0);
   const q = questions[i];
   const done = Object.keys(answers).length === questions.length;
 
-  // Persist progress locally for mobile
+  // Persist progress for mobile
   useEffect(() => {
     try {
       const raw = localStorage.getItem("ccu_assessment");
@@ -33,25 +34,25 @@ export default function Assessment() {
     } catch {}
   }, []);
   useEffect(() => {
-    try {
-      localStorage.setItem("ccu_assessment", JSON.stringify({ a: answers, idx: i }));
-    } catch {}
+    try { localStorage.setItem("ccu_assessment", JSON.stringify({ a: answers, idx: i })); } catch {}
   }, [answers, i]);
 
   useEffect(() => {
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   }, [i]);
 
-  const chosenIdx = q ? (answers[q.id] as number | undefined) : undefined;
+  const chosenIdx = q && q.kind==="choice" ? (answers[q.id] as number | undefined) : undefined;
+  const sliderVal = q && q.kind==="slider" ? (answers[q.id] as number | undefined) : undefined;
 
-  function setAnswer(id: string, idx: number) {
-    setAnswers((prev) => ({ ...prev, [id]: idx }));
+  function setAnswer(id: string, value: number) {
+    setAnswers((prev) => ({ ...prev, [id]: value }));
   }
   function next() { setI((prev) => Math.min(prev + 1, questions.length - 1)); }
   function back() { setI((prev) => Math.max(prev - 1, 0)); }
   function goResults() { push({ pathname: "/results", query: { a: JSON.stringify(answers) } }); }
 
   const tr = (en: string, es: string) => (loc === "en" ? en : es);
+  const canProceed = q ? answers[q.id] !== undefined : false;
 
   return (
     <section>
@@ -59,7 +60,7 @@ export default function Assessment() {
         {tr("Connections Financial Health & Trust Assessment", "Evaluación de Salud Financiera y Confianza")}
       </h1>
 
-      {/* Progress header only (quiet mode) */}
+      {/* Progress header (quiet mode) */}
       <div className="mb-4 flex items-center justify-between text-sm text-slate-700">
         <span>
           {tr("Question", "Pregunta")} {i + 1} {tr("of", "de")} {questions.length}
@@ -69,8 +70,8 @@ export default function Assessment() {
         </div>
       </div>
 
-      {/* Question-only card */}
-      {q && (
+      {/* Render by type */}
+      {q && q.kind === "choice" && (
         <QuestionCard
           q={q}
           locale={loc}
@@ -78,20 +79,25 @@ export default function Assessment() {
           onAnswer={(idx) => setAnswer(q.id, idx)}
         />
       )}
+      {q && q.kind === "slider" && (
+        <SliderQuestionCard
+          q={q}
+          locale={loc}
+          value={sliderVal ?? 50}
+          onChange={(v) => setAnswer(q.id, v)}
+        />
+      )}
 
-      {/* Navigation buttons */}
+      {/* Nav */}
       <div className="flex gap-3">
         <button onClick={back} disabled={i === 0} className="px-4 py-3 rounded-xl border disabled:opacity-50">
           {tr("Back", "Atrás")}
         </button>
         {i < questions.length - 1 ? (
           <button
-            onClick={() => {
-              if (q && answers[q.id] === undefined) return;
-              next();
-            }}
+            onClick={() => { if (!canProceed) return; next(); }}
             className="px-4 py-3 rounded-xl bg-brand-500 text-white disabled:bg-slate-300"
-            disabled={q ? answers[q.id] === undefined : true}
+            disabled={!canProceed}
           >
             {tr("Next", "Siguiente")}
           </button>

@@ -1,4 +1,4 @@
-import { Question } from "@/data/assessment";
+import { ChoiceQuestion } from "@/data/assessment";
 import clsx from "clsx";
 
 export default function QuestionCard({
@@ -7,7 +7,7 @@ export default function QuestionCard({
   selectedIdx,
   onAnswer
 }: {
-  q: Question;
+  q: ChoiceQuestion;
   locale: "en" | "es";
   selectedIdx?: number;
   onAnswer: (idx: number) => void;
