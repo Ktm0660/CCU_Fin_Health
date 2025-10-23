@@ -1,19 +1,15 @@
 import { useRouter } from "next/router";
 import { useMemo } from "react";
-import { scoreAnswers, bucketize, bucketCopy } from "@/data/assessment";
+import { scoreAnswers, bucketize5 } from "@/data/assessment";
+import { bucketCopy5 } from "@/data/results_copy";
 import { recommend } from "@/data/recommendations";
 import Link from "next/link";
 import { t } from "@/lib/i18n";
 
-function Chip({ text }: { text: string }) {
-  return <span className="inline-block px-2 py-1 rounded-full bg-brand-100 text-ink-900 text-xs font-medium">{text}</span>;
-}
-function Card({ title, body, children }: { title: string; body: string; children?: React.ReactNode }) {
+function Bar({ pct }: { pct:number }) {
   return (
-    <div className="bg-white rounded-2xl shadow p-4 border">
-      <h3 className="font-semibold text-ink-900">{title}</h3>
-      <p className="text-sm mt-2">{body}</p>
-      {children}
+    <div className="h-2 rounded-full bg-slate-200">
+      <div className="h-2 rounded-full bg-brand-500" style={{ width: `${Math.max(0,Math.min(100,Math.round(pct)))}%` }} />
     </div>
   );
 }
@@ -21,7 +17,7 @@ function Card({ title, body, children }: { title: string; body: string; children
 export default function Results() {
   const router = useRouter();
   const locale = (router.locale as "en"|"es") || "en";
-  const copy = bucketCopy[locale];
+  const copy = bucketCopy5(locale);
 
   const ans = useMemo(() => {
     try { return JSON.parse((router.query.a as string) || "{}"); }
@@ -29,62 +25,70 @@ export default function Results() {
   }, [router.query.a]);
 
   const s = scoreAnswers(ans);
+  const dims = [
+    { key:"habits", label: t(locale,"habits") },
+    { key:"confidence", label: t(locale,"confidence") },
+    { key:"stability", label: t(locale,"stability") },
+  ] as const;
+
   const buckets = {
-    habits: bucketize(s.habits, s.maxHabits),
-    confidence: bucketize(s.confidence, s.maxConfidence),
-    stability: bucketize(s.stability, s.maxStability)
+    habits: bucketize5(s.habits, s.maxHabits),
+    confidence: bucketize5(s.confidence, s.maxConfidence),
+    stability: bucketize5(s.stability, s.maxStability)
   };
 
-  const tally = { start:0, building:0, strong:0 } as Record<"start"|"building"|"strong", number>;
-  (Object.values(buckets) as ("start"|"building"|"strong")[]).forEach(b => (tally[b] += 1));
-  const overall = (()=> {
-    if (tally.strong >= 2) return "strong";
-    if (tally.building >= 2) return "building";
-    if (tally.start >= 2) return "start";
-    if (tally.building) return "building";
-    if (tally.start) return "start";
-    return "strong";
-  })();
-
-  const recs = recommend(buckets, locale);
-
-  const label = (k:"start"|"building"|"strong") =>
-    k==="start" ? t(locale, "bStart") : k==="building" ? t(locale, "bBuild") : t(locale, "bStrong");
+  const rank: Record<string, number> = { rebuilding:1, getting_started:2, progress:3, on_track:4, empowered:5 };
+  const avg = (rank[buckets.habits] + rank[buckets.confidence] + rank[buckets.stability]) / 3;
+  const overall =
+    avg < 1.5 ? "rebuilding" :
+    avg < 2.5 ? "getting_started" :
+    avg < 3.5 ? "progress" :
+    avg < 4.5 ? "on_track" : "empowered";
 
   return (
     <section>
-      <h1 className="text-2xl font-semibold text-ink-900 mb-2">
-        {t(locale, "resultsTitle")}
-      </h1>
+      <h1 className="text-2xl font-semibold text-ink-900 mb-2">{t(locale,"resultsTitle")}</h1>
 
-      {/* Overall card */}
-      <Card
-        title={`${t(locale, "overall")} — ${label(overall)}`}
-        body={copy.overall[overall]}
-      >
-        <div className="mt-2 space-x-2">
-          <Chip text={`${t(locale, "habits")}: ${label(buckets.habits)}`} />
-          <Chip text={`${t(locale, "confidence")}: ${label(buckets.confidence)}`} />
-          <Chip text={`${t(locale, "stability")}: ${label(buckets.stability)}`} />
+      {/* Overall profile */}
+      <div className="bg-white rounded-2xl shadow p-4 border">
+        <h2 className="text-xl font-semibold text-ink-900">
+          {copy.overall.title(overall)}
+        </h2>
+        <p className="text-sm mt-2">{copy.overall.body(overall)}</p>
+
+        <div className="grid md:grid-cols-3 gap-4 mt-4">
+          {dims.map(d => {
+            const value = s[d.key];
+            const max = s[`max${d.key[0].toUpperCase()+d.key.slice(1)}` as "maxHabits"|"maxConfidence"|"maxStability"];
+            const pct = (value/Math.max(1,max))*100;
+            const label = copy.labels[buckets[d.key as keyof typeof buckets]];
+            const items = copy.dim[d.key as "habits"|"confidence"|"stability"].strengths(buckets[d.key as keyof typeof buckets]);
+            return (
+              <div key={d.key} className="bg-white rounded-xl border p-3">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium">{d.label}</span>
+                  <span className="text-slate-600">{label}</span>
+                </div>
+                <div className="mt-2"><Bar pct={pct} /></div>
+                <ul className="mt-2 text-sm list-disc ml-5">
+                  {items.map((x,i)=><li key={i}>{x}</li>)}
+                </ul>
+              </div>
+            );
+          })}
         </div>
+
         <div className="mt-4">
           <Link href={{ pathname:"/plan", query:{ a: JSON.stringify(ans) }}} className="px-4 py-2 rounded-xl bg-brand-500 text-white no-underline">
             {t(locale, "makePlan")}
           </Link>
         </div>
-      </Card>
-
-      {/* Dimension cards */}
-      <div className="grid md:grid-cols-3 gap-4 mt-4">
-        <Card title={t(locale, "habits")} body={copy.dim.habits[buckets.habits]} />
-        <Card title={t(locale, "confidence")} body={copy.dim.confidence[buckets.confidence]} />
-        <Card title={t(locale, "stability")} body={copy.dim.stability[buckets.stability]} />
       </div>
 
-      {/* Tailored recommendations */}
-      <h2 className="text-xl font-semibold mt-8 mb-3">{t(locale, "helpfulNext")}</h2>
+      {/* Tailored recommendations (lightweight; can deepen later) */}
+      <h2 className="text-xl font-semibold mt-8 mb-3">{t(locale,"helpfulNext")}</h2>
       <ul className="list-disc ml-6 space-y-2">
-        {recs.map((r, idx) => (
+        {recommend(buckets, locale).map((r, idx) => (
           <li key={idx}>
             {r.href.startsWith("http") ? (
               <a className="no-underline" href={r.href} target="_blank" rel="noreferrer">{r.title}</a>
@@ -94,15 +98,6 @@ export default function Results() {
           </li>
         ))}
       </ul>
-
-      <div className="mt-6 flex gap-3">
-        <Link href="/resources" className="px-4 py-2 rounded-xl border no-underline">
-          {t(locale, "exploreTools")}
-        </Link>
-        <Link href="/products" className="px-4 py-2 rounded-xl bg-brand-500 text-white no-underline">
-          {t(locale, "seeProducts")}
-        </Link>
-      </div>
     </section>
   );
 }
