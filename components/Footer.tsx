@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { t } from "@/lib/i18n";
+import LanguageToggle from "@/components/LanguageToggle";
 
 export default function Footer() {
   const router = useRouter();
@@ -16,6 +17,9 @@ export default function Footer() {
               ? "Serving rural Idaho with judgment-free guidance."
               : "Sirviendo a Idaho rural con orientación sin juicios."}
           </p>
+          <div className="mt-3">
+            <LanguageToggle />
+          </div>
         </div>
         <div>
           <p className="font-semibold text-ink-900">{t(locale,"nav.explore")}</p>

@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import Head from "next/head";
+import LanguageToggle from "@/components/LanguageToggle";
 
 export default function Home() {
   const router = useRouter();
   const locale = (router.locale as "en" | "es") || "en";
   const t = (en: string, es: string) => (locale === "en" ? en : es);
-
   const langToggle = locale === "en" ? "es" : "en";
 
   return (
@@ -25,12 +25,12 @@ export default function Home() {
       <main className="min-h-screen">
         {/* HERO */}
         <section className="relative overflow-hidden">
-          {/* soft gradient background */}
-          <div
-            aria-hidden
-            className="absolute inset-0 bg-gradient-to-b from-brand-50 via-white to-white"
-          />
+          <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-brand-50 via-white to-white" />
           <div className="relative mx-auto max-w-6xl px-4 py-12 md:py-20">
+            <div className="flex items-center justify-between mb-4 md:hidden">
+              {/* mobile top toggle too */}
+              <LanguageToggle />
+            </div>
             <div className="grid md:grid-cols-2 gap-8 items-center">
               <div>
                 <span className="inline-block rounded-full bg-white border px-3 py-1 text-xs md:text-sm text-slate-700 shadow">
@@ -66,70 +66,53 @@ export default function Home() {
                   {t("Takes about 3 minutes · No credit pull · No sales pitch", "Toma ~3 minutos · Sin consultar crédito · Sin ventas")}
                 </p>
 
-                <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-slate-700">
-                  <Badge emoji="🌱" text={t("Small steps, real progress", "Pasos pequeños, progreso real")} />
-                  <Badge emoji="💬" text={t("Plain-language, bilingual", "Lenguaje claro, bilingüe")} />
-                  <Badge emoji="🔒" text={t("Private & judgment-free", "Privado y sin juicios")} />
+                {/* INFO CARDS: softer, clearly non-interactive */}
+                <div className="mt-6 grid md:grid-cols-3 gap-3">
+                  <InfoTile
+                    emoji="💡"
+                    title={t("Clarity in minutes", "Claridad en minutos")}
+                    body={t("Understand where you stand—without spreadsheets.", "Entiende dónde estás—sin hojas de cálculo.")}
+                  />
+                  <InfoTile
+                    emoji="🌾"
+                    title={t("Made for our communities", "Hecho para nuestras comunidades")}
+                    body={t("Plain-language guidance that respects your life and time.", "Guía simple que respeta tu vida y tu tiempo.")}
+                  />
+                  <InfoTile
+                    emoji="🧭"
+                    title={t("Simple next steps", "Pasos simples")}
+                    body={t("Walk away with a plan you can actually follow.", "Sal con un plan que realmente puedas seguir.")}
+                  />
                 </div>
               </div>
 
-              {/* Friendly illustration-style block (no external images needed) */}
+              {/* right column stays as-is (testimonial metric card) */}
               <div className="md:pl-8">
-                <div className="relative">
-                  <div className="rounded-3xl border bg-white shadow p-5">
-                    <div className="flex items-center gap-3">
-                      <Avatar initials="AC" />
-                      <div>
-                        <p className="font-medium text-ink-900">
-                          {t("“I finally have a simple plan.”", "“Por fin tengo un plan simple.”")}
-                        </p>
-                        <p className="text-xs text-slate-600">
-                          {t("Member in rural Idaho", "Socia en Idaho rural")}
-                        </p>
-                      </div>
+                <div className="rounded-3xl border bg-white shadow p-5">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 border text-brand-700 font-semibold">AC</div>
+                    <div>
+                      <p className="font-medium text-ink-900">
+                        {t("“I finally have a simple plan.”", "“Por fin tengo un plan simple.”")}
+                      </p>
+                      <p className="text-xs text-slate-600">
+                        {t("Member in rural Idaho", "Socia en Idaho rural")}
+                      </p>
                     </div>
-                    <div className="mt-5 grid grid-cols-3 gap-3">
-                      <Metric label={t("Habits", "Hábitos")} value="On Track" />
-                      <Metric label={t("Confidence", "Confianza")} value={t("Progress", "Tomando ritmo")} />
-                      <Metric label={t("Stability", "Estabilidad")} value={t("Getting Started", "Empezando")} />
-                    </div>
-                    <Link
-                      href="/assessment"
-                      className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-brand-500 px-4 py-2 text-white no-underline"
-                    >
-                      {t("See your snapshot", "Conoce tu panorama")}
-                    </Link>
                   </div>
+                  <div className="mt-5 grid grid-cols-3 gap-3">
+                    <Metric label={t("Habits", "Hábitos")} value="On Track" />
+                    <Metric label={t("Confidence", "Confianza")} value={t("Progress", "Tomando ritmo")} />
+                    <Metric label={t("Stability", "Estabilidad")} value={t("Getting Started", "Empezando")} />
+                  </div>
+                  <Link
+                    href="/assessment"
+                    className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-brand-500 px-4 py-2 text-white no-underline"
+                  >
+                    {t("See your snapshot", "Conoce tu panorama")}
+                  </Link>
                 </div>
               </div>
-            </div>
-
-            {/* benefit trio */}
-            <div className="mt-14 grid md:grid-cols-3 gap-4">
-              <Benefit
-                emoji="💡"
-                title={t("Clarity in minutes", "Claridad en minutos")}
-                body={t(
-                  "Understand where you stand—without spreadsheets.",
-                  "Entiende dónde estás—sin hojas de cálculo."
-                )}
-              />
-              <Benefit
-                emoji="🌾"
-                title={t("Made for our communities", "Hecho para nuestras comunidades")}
-                body={t(
-                  "Plain-language guidance that respects your life and time.",
-                  "Guía en lenguaje simple que respeta tu vida y tu tiempo."
-                )}
-              />
-              <Benefit
-                emoji="🧭"
-                title={t("Simple next steps", "Pasos simples")}
-                body={t(
-                  "Walk away with a plan you can actually follow.",
-                  "Sal con un plan que realmente puedas seguir."
-                )}
-              />
             </div>
           </div>
         </section>
@@ -222,20 +205,16 @@ export default function Home() {
   );
 }
 
-/* ---------- tiny presentational helpers ---------- */
-function Badge({ emoji, text }: { emoji: string; text: string }) {
+function InfoTile({ emoji, title, body }:{ emoji:string; title:string; body:string }) {
   return (
-    <span className="inline-flex items-center gap-2 rounded-full bg-white border px-3 py-1 shadow text-slate-700">
-      <span aria-hidden>{emoji}</span>
-      {text}
-    </span>
-  );
-}
-
-function Avatar({ initials }: { initials: string }) {
-  return (
-    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 border text-brand-700 font-semibold">
-      {initials}
+    <div className="rounded-2xl border bg-white/60 p-4">
+      <div className="flex items-start gap-3">
+        <div className="h-9 w-9 rounded-full border bg-white flex items-center justify-center text-lg" aria-hidden>{emoji}</div>
+        <div>
+          <p className="font-semibold text-ink-900">{title}</p>
+          <p className="text-sm text-slate-700">{body}</p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -245,26 +224,6 @@ function Metric({ label, value }: { label: string; value: string }) {
     <div className="rounded-xl border p-3 text-sm">
       <div className="text-slate-600">{label}</div>
       <div className="font-semibold text-ink-900">{value}</div>
-    </div>
-  );
-}
-
-function Benefit({
-  emoji,
-  title,
-  body,
-}: {
-  emoji: string;
-  title: string;
-  body: string;
-}) {
-  return (
-    <div className="rounded-2xl border bg-white p-5 shadow">
-      <div className="text-2xl" aria-hidden>
-        {emoji}
-      </div>
-      <h3 className="mt-2 font-semibold text-ink-900">{title}</h3>
-      <p className="text-slate-700 text-sm mt-1">{body}</p>
     </div>
   );
 }
