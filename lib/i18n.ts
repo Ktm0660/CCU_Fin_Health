@@ -16,6 +16,16 @@ const dict = {
     navProducts: "Products",
     langEnglish: "English",
     langSpanish: "Español",
+    "nav.home": "Home",
+    "nav.assessment": "Checkup",
+    "nav.resources": "Tools & Resources",
+    "nav.products": "Products",
+    "nav.results": "Results",
+    "nav.plan": "Action Path",
+    "nav.explore": "Explore",
+    "nav.getHelp": "Get help",
+    "nav.counseling": "Counseling",
+    "nav.mobileUnit": "Mobile unit & schedule",
 
     // home
     heroTitle: "Feel safer and stronger with money.",
@@ -76,6 +86,16 @@ const dict = {
     navProducts: "Productos",
     langEnglish: "English",
     langSpanish: "Español",
+    "nav.home": "Inicio",
+    "nav.assessment": "Evaluación",
+    "nav.resources": "Herramientas y recursos",
+    "nav.products": "Productos",
+    "nav.results": "Resultados",
+    "nav.plan": "Ruta de acción",
+    "nav.explore": "Explorar",
+    "nav.getHelp": "Obtener ayuda",
+    "nav.counseling": "Consejería",
+    "nav.mobileUnit": "Unidad móvil y horario",
 
     // home
     heroTitle: "Siéntete más seguro y fuerte con tu dinero.",
