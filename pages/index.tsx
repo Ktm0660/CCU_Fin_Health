@@ -12,48 +12,46 @@ export default function Home() {
     <>
       <Head>
         <title>{t("Feel confident about your money again | Connections", "Vuelve a sentir confianza con tu dinero | Connections")}</title>
-        <meta
-          name="description"
-          content={t(
-            "Take our 3-minute Financial Health Checkup — no judgment, just clarity and small steps forward.",
-            "Haz nuestra evaluación de 3 minutos — sin juicios, con claridad y pasos simples."
-          )}
-        />
+        <meta name="description" content={t(
+          "Take our 3-minute Financial Health Checkup — no judgment, just clarity and small steps forward.",
+          "Haz nuestra evaluación de 3 minutos — sin juicios, con claridad y pasos simples."
+        )} />
       </Head>
 
       <main className="min-h-screen">
-        {/* HERO */}
+        {/* HERO with softer rhythm on mobile */}
         <section className="relative overflow-hidden">
           <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-brand-50 via-white to-white" />
-          <div className="relative mx-auto max-w-6xl px-4 py-12 md:py-20">
-            {/* Removed extra mobile language toggle to prevent duplicate buttons */}
-
-            <div className="grid md:grid-cols-2 gap-8 items-center">
+          <div className="relative mx-auto max-w-6xl px-4 py-10 md:py-20">
+            <div className="grid md:grid-cols-2 gap-10 items-center">
               <div>
-                <span className="inline-block rounded-full bg-white border px-3 py-1 text-xs md:text-sm text-slate-700 shadow">
+                <span className="inline-block rounded-full bg-white border px-3 py-1 text-xs md:text-sm text-slate-700">
                   {t("Judgment-free & private", "Sin juicios y privado")}
                 </span>
-                <h1 className="mt-4 font-semibold text-3xl md:text-5xl leading-tight text-ink-900">
+
+                <h1 className="mt-5 font-semibold text-[28px] leading-[1.25] md:text-5xl text-ink-900">
                   {t("Feel confident about your money again.", "Vuelve a sentir confianza con tu dinero.")}
                 </h1>
-                <p className="mt-3 text-slate-700 text-base md:text-lg">
+
+                <p className="mt-4 text-slate-700 text-[16px] leading-relaxed md:text-lg md:leading-relaxed">
                   {t(
                     "Take our quick Financial Health Checkup—get plain-language insights and a simple action path.",
                     "Haz nuestra Evaluación de Salud Financiera—recibe ideas claras y una ruta de acción simple."
                   )}
                 </p>
 
-                <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                {/* Full-width primary CTA on mobile */}
+                <div className="mt-7 flex flex-col sm:flex-row gap-3">
                   <Link
                     href="/assessment"
-                    className="inline-flex items-center justify-center rounded-xl bg-brand-500 px-5 py-3 text-white no-underline shadow hover:opacity-95"
+                    className="inline-flex items-center justify-center rounded-xl bg-brand-500 px-6 py-4 text-white no-underline text-base shadow-sm hover:opacity-95 w-full sm:w-auto"
                   >
                     {t("Start my free checkup", "Empezar mi evaluación gratis")}
                   </Link>
                   <Link
                     href={router.asPath}
                     locale={langToggle}
-                    className="inline-flex items-center justify-center rounded-xl border px-5 py-3 no-underline text-ink-900 bg-white hover:bg-brand-50"
+                    className="inline-flex items-center justify-center rounded-xl border px-6 py-4 no-underline text-ink-900 bg-white hover:bg-brand-50 w-full sm:w-auto"
                   >
                     {langToggle === "es" ? "Español" : "English"}
                   </Link>
@@ -63,8 +61,8 @@ export default function Home() {
                   {t("Takes about 3 minutes · No credit pull · No sales pitch", "Toma ~3 minutos · Sin consultar crédito · Sin ventas")}
                 </p>
 
-                {/* INFO TILES — informational appearance (no shadow, soft tint, left accent) */}
-                <div className="mt-8 grid md:grid-cols-3 gap-3">
+                {/* INFO TILES — more breathing room on mobile */}
+                <div className="mt-9 grid grid-cols-1 md:grid-cols-3 gap-4">
                   <InfoTile
                     emoji="💡"
                     title={t("Clarity in minutes", "Claridad en minutos")}
@@ -83,18 +81,14 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Right column: testimonial metric card */}
+              {/* Right column testimonial */}
               <div className="md:pl-8">
-                <div className="rounded-3xl border bg-white shadow p-5">
+                <div className="rounded-3xl border bg-white shadow p-5 md:p-6">
                   <div className="flex items-center gap-3">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 border text-brand-700 font-semibold">AC</div>
                     <div>
-                      <p className="font-medium text-ink-900">
-                        {t("“I finally have a simple plan.”", "“Por fin tengo un plan simple.”")}
-                      </p>
-                      <p className="text-xs text-slate-600">
-                        {t("Member in rural Idaho", "Socia en Idaho rural")}
-                      </p>
+                      <p className="font-medium text-ink-900">{t("“I finally have a simple plan.”", "“Por fin tengo un plan simple.”")}</p>
+                      <p className="text-xs text-slate-600">{t("Member in rural Idaho", "Socia en Idaho rural")}</p>
                     </div>
                   </div>
                   <div className="mt-5 grid grid-cols-3 gap-3">
@@ -102,10 +96,7 @@ export default function Home() {
                     <Metric label={t("Confidence", "Confianza")} value={t("Progress", "Tomando ritmo")} />
                     <Metric label={t("Stability", "Estabilidad")} value={t("Getting Started", "Empezando")} />
                   </div>
-                  <Link
-                    href="/assessment"
-                    className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-brand-500 px-4 py-2 text-white no-underline"
-                  >
+                  <Link href="/assessment" className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-brand-500 px-4 py-3 text-white no-underline">
                     {t("See your snapshot", "Conoce tu panorama")}
                   </Link>
                 </div>
@@ -113,8 +104,6 @@ export default function Home() {
             </div>
           </div>
         </section>
-
-        {/* leave testimonials + final CTA as-is */}
       </main>
     </>
   );
@@ -122,17 +111,14 @@ export default function Home() {
 
 function InfoTile({ emoji, title, body }:{ emoji:string; title:string; body:string }) {
   return (
-    <div className="rounded-xl bg-brand-50/50 p-4 border-l-4 border-brand-300">
+    <div className="rounded-xl bg-brand-50/60 p-5 border-l-4 border-brand-300">
       <div className="flex items-start gap-3">
-        <div
-          className="h-8 w-8 rounded-full bg-white/70 flex items-center justify-center text-lg border"
-          aria-hidden
-        >
+        <div className="h-9 w-9 rounded-full bg-white/80 flex items-center justify-center text-lg border" aria-hidden>
           {emoji}
         </div>
         <div>
-          <p className="font-semibold text-ink-900">{title}</p>
-          <p className="text-sm text-slate-700">{body}</p>
+          <p className="font-semibold text-ink-900 text-[16px] leading-tight">{title}</p>
+          <p className="text-sm text-slate-700 leading-relaxed mt-1">{body}</p>
         </div>
       </div>
     </div>
