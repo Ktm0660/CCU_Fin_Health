@@ -63,6 +63,10 @@ const dict = {
     exploreTools: "Explore Tools & Resources",
     seeProducts: "See Optional CU Products",
     makePlan: "Create my 30-day plan",
+    "results.guidedPath": "Your guided path",
+    "results.startHere": "Start here",
+    "learn.title": "Short lessons",
+    "learn.explore": "Explore lessons",
 
     // buckets
     bStart: "Getting Started",
@@ -133,6 +137,10 @@ const dict = {
     exploreTools: "Explorar herramientas y recursos",
     seeProducts: "Ver productos opcionales",
     makePlan: "Crear mi plan de 30 días",
+    "results.guidedPath": "Tu ruta guiada",
+    "results.startHere": "Empieza aquí",
+    "learn.title": "Lecciones cortas",
+    "learn.explore": "Explorar lecciones",
 
     // buckets
     bStart: "Empezando",
