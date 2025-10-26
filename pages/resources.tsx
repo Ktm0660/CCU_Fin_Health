@@ -1,21 +1,107 @@
-export default function Resources() {
+import { useMemo, useState } from "react";
+import { useRouter } from "next/router";
+import { resources, Resource, Area, RType, rTitle } from "@/data/resources";
+import ResourceCard from "@/components/ResourceCard";
+
+const AREAS: { key: Area|"all"; en: string; es: string }[] = [
+  { key: "all", en: "All topics", es: "Todos los temas" },
+  { key: "stability", en: "Stability", es: "Estabilidad" },
+  { key: "habits", en: "Habits", es: "Hábitos" },
+  { key: "confidence", en: "Confidence", es: "Confianza" },
+  { key: "trust", en: "Trust & Access", es: "Confianza y acceso" },
+];
+
+const TYPES: { key: RType|"all"; en: string; es: string }[] = [
+  { key: "all", en: "All types", es: "Todos los tipos" },
+  { key: "explainer", en: "Explainers", es: "Explicadores" },
+  { key: "tool", en: "Tools", es: "Herramientas" },
+  { key: "download", en: "Downloads", es: "Descargas" },
+  { key: "video", en: "Videos", es: "Videos" },
+  { key: "product", en: "Products", es: "Productos" },
+];
+
+export default function ResourcesPage() {
+  const router = useRouter();
+  const locale = (router.locale as "en"|"es") || "en";
+  const [area, setArea] = useState<Area|"all">("all");
+  const [type, setType] = useState<RType|"all">("all");
+  const [q, setQ] = useState("");
+
+  const list = useMemo(() => {
+    let base = resources.filter(r => r.locale === "both" || r.locale === locale);
+    if (area !== "all") base = base.filter(r => r.area.includes(area));
+    if (type !== "all") base = base.filter(r => r.type === type);
+    if (q.trim()) {
+      const needle = q.trim().toLowerCase();
+      base = base.filter(r =>
+        rTitle(r, locale).toLowerCase().includes(needle) ||
+        r.summary_en.toLowerCase().includes(needle) ||
+        r.summary_es.toLowerCase().includes(needle) ||
+        r.tags.join(" ").toLowerCase().includes(needle)
+      );
+    }
+    base.sort((a,b)=> rTitle(a,locale).localeCompare(rTitle(b,locale)));
+    return base;
+  }, [area, type, q, locale]);
+
+  const T = (en:string, es:string)=> locale==="en" ? en : es;
+
   return (
-    <section className="space-y-4">
-      <h1 className="text-2xl font-semibold text-ink-900">Tools & Resources</h1>
-      <Card title="Starter Budget (Printable)" href="https://www.consumerfinance.gov/consumer-tools/budgeting/" />
-      <Card title="Emergency Fund Planner" href="https://www.consumer.gov/" />
-      <Card title="Credit Report Access" href="https://www.annualcreditreport.com" />
-      <Card title="Debt Snowball vs Avalanche explainer" href="https://www.investopedia.com/debt-snowball-vs-debt-avalanche-4800074" />
-      <p className="text-sm text-slate-600">
-        These are neutral, education-first links. We’ll add more local and bilingual resources later.
+    <section>
+      <h1 className="text-2xl font-semibold text-ink-900 mb-2">
+        {T("Tools & Resources", "Herramientas y recursos")}
+      </h1>
+      <p className="text-sm text-slate-700 mb-4">
+        {T("Plain-language guides and tools. Filter by topic or type.", "Guías y herramientas en lenguaje simple. Filtra por tema o tipo.")}
       </p>
+
+      {/* Filters */}
+      <div className="bg-white rounded-2xl border p-3 mb-4">
+        <div className="flex flex-col md:flex-row gap-3 md:items-end">
+          <div className="flex-1">
+            <label className="text-xs text-slate-600">{T("Topic","Tema")}</label>
+            <div className="flex gap-2 flex-wrap mt-1">
+              {AREAS.map(a=>(
+                <button
+                  key={a.key as string}
+                  onClick={()=>setArea(a.key as Area|"all")}
+                  className={`px-3 py-1.5 rounded-lg border text-sm ${area===a.key ? "bg-brand-500 text-white" : ""}`}
+                >
+                  {T(a.en,a.es)}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="text-xs text-slate-600">{T("Type","Tipo")}</label>
+            <div className="flex gap-2 mt-1">
+              {TYPES.map(t=>(
+                <button
+                  key={t.key as string}
+                  onClick={()=>setType(t.key as RType|"all")}
+                  className={`px-3 py-1.5 rounded-lg border text-sm ${type===t.key ? "bg-brand-500 text-white" : ""}`}
+                >
+                  {T(t.en,t.es)}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="md:ml-auto">
+            <label className="text-xs text-slate-600">{T("Search","Buscar")}</label>
+            <input
+              value={q}
+              onChange={e=>setQ(e.target.value)}
+              placeholder={T("Search resources…","Buscar recursos…")}
+              className="mt-1 w-full md:w-64 px-3 py-2 rounded-lg border"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* List */}
+      <div className="grid md:grid-cols-3 gap-4">
+        {list.map(r=> <ResourceCard key={r.id} r={r} locale={locale} />)}
+      </div>
     </section>
-  );
-}
-function Card({title, href}:{title:string; href:string}) {
-  return (
-    <a href={href} target="_blank" rel="noreferrer" className="block bg-white rounded-2xl shadow p-4 border no-underline">
-      <span className="font-medium text-ink-900">{title}</span>
-    </a>
   );
 }
