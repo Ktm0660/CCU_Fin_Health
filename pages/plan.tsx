@@ -1,11 +1,14 @@
 import { useRouter } from "next/router";
 import { useMemo } from "react";
-import { scoreAnswers } from "@/data/assessment";
-import { bucketize5 } from "@/data/assessment";
+import { scoreAnswers, bucketize5 } from "@/data/assessment";
 import { personaCopy, getPersona } from "@/data/personas";
 import { recommend } from "@/data/recommendations";
 import Link from "next/link";
 import { t } from "@/lib/i18n";
+
+// NEW: lessons imports
+import { pickLessons, Area, Level } from "@/data/lessons";
+import LessonCard from "@/components/LessonCard";
 
 type Bucket =
   | "rebuilding"
@@ -51,7 +54,7 @@ export default function PlanPage() {
     empowered: 5,
   };
 
-  // Determine primary/secondary focus by lowest-ranked dimension (stability -> habits -> confidence tie-break)
+  // Determine primary/secondary focus by lowest-ranked dimension
   const order = [
     { key: "stability", r: rank[buckets.stability as Bucket] },
     { key: "habits", r: rank[buckets.habits as Bucket] },
@@ -59,6 +62,19 @@ export default function PlanPage() {
   ].sort((a, z) => a.r - z.r);
   const primary = order[0].key as "habits" | "confidence" | "stability";
   const secondary = order[1].key as "habits" | "confidence" | "stability";
+
+  // Map persona to a starting lesson level
+  const personaLevelMap: Record<string, Level> = {
+    rebuilding: "discover",
+    getting_started: "stabilize",
+    progress: "grow",
+    on_track: "grow",
+    empowered: "thrive",
+  };
+  const startLevel = personaLevelMap[persona];
+
+  // Pick lessons for primary focus area
+  const recLessons = pickLessons(primary as Area, startLevel, locale, 3);
 
   const L = (en: string, es: string) => (locale === "en" ? en : es);
 
@@ -105,8 +121,24 @@ export default function PlanPage() {
         </Card>
       </div>
 
+      {/* NEW: Recommended lessons inside the Action Path */}
+      <h2 className="text-xl font-semibold mt-8 mb-3">
+        {L("Recommended lessons for you", "Lecciones recomendadas para ti")}
+      </h2>
+      <p className="text-sm text-slate-700 mb-3">
+        {L(
+          "Short, plain-language lessons matched to your current focus.",
+          "Lecciones cortas y claras según tu enfoque actual."
+        )}
+      </p>
+      <div className="grid md:grid-cols-3 gap-4">
+        {recLessons.map(lsn => (
+          <LessonCard key={lsn.id} lesson={lsn} locale={locale} />
+        ))}
+      </div>
+
       {/* Tailored resources */}
-      <h2 className="text-xl font-semibold mt-8 mb-3">{t(locale, "helpfulNext")}</h2>
+      <h2 className="text-xl font-semibold mt-8 mb-3">{t(locale,"helpfulNext")}</h2>
       <ul className="list-disc ml-6 space-y-2">
         {recommend(
           {
