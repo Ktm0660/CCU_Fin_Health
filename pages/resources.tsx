@@ -47,60 +47,73 @@ export default function ResourcesPage() {
   const T = (en:string, es:string)=> locale==="en" ? en : es;
 
   return (
-    <section>
-      <h1 className="text-2xl font-semibold text-ink-900 mb-2">
-        {T("Tools & Resources", "Herramientas y recursos")}
-      </h1>
-      <p className="text-sm text-slate-700 mb-4">
-        {T("Plain-language guides and tools. Filter by topic or type.", "Guías y herramientas en lenguaje simple. Filtra por tema o tipo.")}
-      </p>
+    <section className="py-6">
+      <div className="max-w-3xl md:max-w-4xl mx-auto px-4">
+        <h1 className="text-[28px] md:text-4xl leading-tight font-bold text-ink-900 mt-1 mb-1.5">
+          {T("Tools & Resources", "Herramientas y recursos")}
+        </h1>
+        <p className="text-slate-700 mb-4 md:mb-6">
+          {T(
+            "Plain-language guides and tools. Filter by topic or type.",
+            "Guías y herramientas en lenguaje simple. Filtra por tema o tipo."
+          )}
+        </p>
 
-      {/* Filters */}
-      <div className="bg-white rounded-2xl border p-3 mb-4">
-        <div className="flex flex-col md:flex-row gap-3 md:items-end">
-          <div className="flex-1">
-            <label className="text-xs text-slate-600">{T("Topic","Tema")}</label>
-            <div className="flex gap-2 flex-wrap mt-1">
-              {AREAS.map(a=>(
-                <button
-                  key={a.key as string}
-                  onClick={()=>setArea(a.key as Area|"all")}
-                  className={`px-3 py-1.5 rounded-lg border text-sm ${area===a.key ? "bg-brand-500 text-white" : ""}`}
-                >
-                  {T(a.en,a.es)}
-                </button>
-              ))}
+        {/* Filters */}
+        <div className="bg-white rounded-2xl border p-3 md:p-5 mb-4 md:mb-6 sticky top-[56px] z-10 md:static md:top-auto backdrop-blur supports-[backdrop-filter]:bg-white/80">
+          <div className="flex flex-col md:flex-row gap-3 md:items-end">
+            <div className="flex-1">
+              <label className="text-xs text-slate-600">{T("Topic","Tema")}</label>
+              <div className="flex gap-2 overflow-x-auto md:flex-wrap pb-1 -mx-1 px-1 mt-1">
+                {AREAS.map(a=>(
+                  <button
+                    key={a.key as string}
+                    onClick={()=>setArea(a.key as Area|"all")}
+                    className={`px-3 py-1.5 rounded-full border text-sm whitespace-nowrap transition-colors ${
+                      area===a.key
+                        ? "bg-emerald-600 text-white border-emerald-600"
+                        : "bg-white text-ink-900 hover:border-emerald-300"
+                    }`}
+                  >
+                    {T(a.en,a.es)}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-          <div>
-            <label className="text-xs text-slate-600">{T("Type","Tipo")}</label>
-            <div className="flex gap-2 mt-1">
-              {TYPES.map(t=>(
-                <button
-                  key={t.key as string}
-                  onClick={()=>setType(t.key as RType|"all")}
-                  className={`px-3 py-1.5 rounded-lg border text-sm ${type===t.key ? "bg-brand-500 text-white" : ""}`}
-                >
-                  {T(t.en,t.es)}
-                </button>
-              ))}
+            <div>
+              <label className="text-xs text-slate-600">{T("Type","Tipo")}</label>
+              <div className="flex gap-2 overflow-x-auto md:flex-wrap pb-1 -mx-1 px-1 mt-1">
+                {TYPES.map(t=>(
+                  <button
+                    key={t.key as string}
+                    onClick={()=>setType(t.key as RType|"all")}
+                    className={`px-3 py-1.5 rounded-full border text-sm whitespace-nowrap transition-colors ${
+                      type===t.key
+                        ? "bg-slate-900 text-white border-slate-900"
+                        : "bg-white text-ink-900 hover:border-emerald-300"
+                    }`}
+                  >
+                    {T(t.en,t.es)}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-          <div className="md:ml-auto">
-            <label className="text-xs text-slate-600">{T("Search","Buscar")}</label>
-            <input
-              value={q}
-              onChange={e=>setQ(e.target.value)}
-              placeholder={T("Search resources…","Buscar recursos…")}
-              className="mt-1 w-full md:w-64 px-3 py-2 rounded-lg border"
-            />
+            <div className="md:ml-auto">
+              <label className="text-xs text-slate-600">{T("Search","Buscar")}</label>
+              <input
+                value={q}
+                onChange={e=>setQ(e.target.value)}
+                placeholder={T("Search resources…","Buscar recursos…")}
+                className="mt-1 w-full md:w-64 px-3 py-2.5 rounded-xl border bg-white/90 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-300"
+              />
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* List */}
-      <div className="grid md:grid-cols-3 gap-4">
-        {list.map(r=> <ResourceCard key={r.id} r={r} locale={locale} />)}
+        {/* List */}
+        <div className="grid md:grid-cols-3 gap-4">
+          {list.map(r=> <ResourceCard key={r.id} r={r} locale={locale} />)}
+        </div>
       </div>
     </section>
   );
