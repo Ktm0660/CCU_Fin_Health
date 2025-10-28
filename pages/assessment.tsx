@@ -61,6 +61,15 @@ export default function Assessment() {
     return guidance(weakest, (s as any)[weakest] ?? 0);
   }, [q, chosenIdx, s]);
 
+  // Normalize tip to a plain string for JSX rendering
+  const tipText: string = useMemo(() => {
+    if (typeof tip === "string") return tip;
+    // If guidance() returns an object like { text, ... }, use its text field
+    const maybeObj: any = tip as any;
+    if (maybeObj && typeof maybeObj.text === "string") return maybeObj.text;
+    return "";
+  }, [tip]);
+
   function selectAnswer(idx:number) {
     if (!q) return;
     setAnswers(prev => ({ ...prev, [q.id]: idx }));
@@ -99,7 +108,7 @@ export default function Assessment() {
       {/* Tip after choosing an option (or general nudge for sliders) */}
       {(chosenIdx !== undefined || !hasOptions(q)) && (
         <div className="bg-brand-50 border rounded-2xl p-4 text-sm text-slate-800 mb-4">
-          <b>{loc==="en" ? "Why this matters:" : "Por qué importa:"}</b> {tip}
+          <b>{loc==="en" ? "Why this matters:" : "Por qué importa:"}</b> {tipText}
         </div>
       )}
 
