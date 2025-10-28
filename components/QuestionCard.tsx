@@ -1,5 +1,3 @@
-import { useState, useEffect } from "react";
-
 // Minimal runtime guards; works even if types differ.
 type AnyQ = Record<string, any>;
 type Locale = "en" | "es";
@@ -18,12 +16,6 @@ type Props = {
 };
 
 export default function QuestionCard({ q, locale, onAnswer }: Props) {
-  const [sliderVal, setSliderVal] = useState<number>(2); // center default
-
-  useEffect(() => {
-    if (isSlider(q)) setSliderVal(2);
-  }, [q]);
-
   // Resolve text fields safely
   const text_en = (q?.text_en as string) ?? "";
   const text_es = (q?.text_es as string) ?? "";
@@ -47,11 +39,41 @@ export default function QuestionCard({ q, locale, onAnswer }: Props) {
     (q?.rightLabel_es as string) ??
     "Muy cómodo";
 
-  return (
-    <div className="bg-white rounded-2xl shadow p-5 mb-5">
-      <p className="font-medium text-ink-900">{prompt}</p>
+  if (isSlider(q)) {
+    return (
+      <div className="bg-white rounded-2xl shadow p-5 mb-3 md:mb-4">
+        <p className="font-medium text-ink-900">{prompt}</p>
 
-      {isChoice(q) ? (
+        {/* Left/Right labels only */}
+        <div className="mt-4 flex items-center justify-between text-sm text-slate-700">
+          <span>{locale === "en" ? left_en : left_es}</span>
+          <span>{locale === "en" ? right_en : right_es}</span>
+        </div>
+
+        {/* Single clean track, free drag, larger thumb */}
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={1}
+          defaultValue={50}
+          onChange={(e) => {
+            // map 0..100 to 0..4 (5 buckets), inclusive
+            const raw = Number(e.target.value);
+            const bucket = Math.min(4, Math.max(0, Math.floor(raw / 20)));
+            onAnswer(bucket);
+          }}
+          className="mt-3 w-full appearance-none rounded-full"
+          aria-label={locale==="en" ? "Select your position" : "Selecciona tu posición"}
+        />
+      </div>
+    );
+  }
+
+  if (isChoice(q)) {
+    return (
+      <div className="bg-white rounded-2xl shadow p-5 mb-3 md:mb-4">
+        <p className="font-medium text-ink-900">{prompt}</p>
         <div className="mt-3 grid gap-2">
           {q.options.map((opt: AnyQ, i: number) => (
             <button
@@ -63,35 +85,9 @@ export default function QuestionCard({ q, locale, onAnswer }: Props) {
             </button>
           ))}
         </div>
-      ) : isSlider(q) ? (
-        <div className="mt-4">
-          <div className="flex items-center justify-between text-sm text-slate-700 mb-2">
-            <span>{locale === "en" ? left_en : left_es}</span>
-            <span>{locale === "en" ? right_en : right_es}</span>
-          </div>
-          <input
-            type="range"
-            min={0}
-            max={4}
-            step={1}
-            value={sliderVal}
-            onChange={(e) => {
-              const v = Number(e.target.value);
-              setSliderVal(v);
-              onAnswer(v);
-            }}
-            className="w-full accent-brand-500"
-            aria-label={prompt}
-          />
-          <div className="mt-2 h-1.5 rounded-full bg-slate-200">
-            <div
-              className="h-1.5 rounded-full bg-brand-200"
-              style={{ width: `${(sliderVal / 4) * 100}%` }}
-              aria-hidden
-            />
-          </div>
-        </div>
-      ) : null}
-    </div>
-  );
+      </div>
+    );
+  }
+
+  return null;
 }

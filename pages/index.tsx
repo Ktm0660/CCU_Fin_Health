@@ -20,9 +20,9 @@ export default function Home() {
 
       <main className="min-h-screen">
         {/* HERO with softer rhythm on mobile */}
-        <section className="relative overflow-hidden">
+        <section className="relative overflow-hidden pt-4 md:pt-8">
           <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-brand-50 via-white to-white" />
-          <div className="relative mx-auto max-w-6xl px-4 py-10 md:py-20">
+          <div className="relative mx-auto max-w-6xl px-4 pb-10 md:pb-20">
             <div className="grid md:grid-cols-2 gap-10 items-center">
               <div>
                 <span className="inline-block rounded-full bg-white border px-3 py-1 text-xs md:text-sm text-slate-700">

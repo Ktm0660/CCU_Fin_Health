@@ -1,6 +1,6 @@
 import { useRouter } from "next/router";
-import { useMemo, useState, useEffect } from "react";
-import { questions, AnswerMap, partialScore, guidance } from "@/data/assessment";
+import { useState, useEffect } from "react";
+import { questions, AnswerMap } from "@/data/assessment";
 import QuestionCard from "@/components/QuestionCard";
 import { saveAnswers } from "@/lib/state";
 
@@ -14,10 +14,6 @@ function Bar({ value, max }: { value:number; max:number }) {
 }
 
 // Narrow type guard to detect multiple-choice questions
-function hasOptions(q: any): q is { options: Array<{ weights: Partial<Record<"habits"|"confidence"|"stability", number>> }> } {
-  return q && Array.isArray((q as any).options);
-}
-
 export default function Assessment() {
   const { locale, push } = useRouter();
   const loc = (locale as "en"|"es") || "en";
@@ -28,47 +24,7 @@ export default function Assessment() {
   const q = questions[i];
   const done = Object.keys(answers).length === questions.length;
 
-  const s = useMemo(() => partialScore(answers), [answers]);
-
   useEffect(() => { saveAnswers(answers); }, [answers]);
-
-  const chosenIdx = (q ? (answers[q.id] as number | undefined) : undefined);
-
-  // Tip logic:
-  // - If multiple-choice: use the chosen option's strongest weight to select a tip
-  // - If slider (no options): show a tip for the currently weakest dimension overall
-  const tip = useMemo(() => {
-    if (!q) return "";
-
-    if (hasOptions(q) && chosenIdx !== undefined) {
-      const w = q.options[chosenIdx]?.weights ?? {};
-      const pairs = [
-        ["habits", w.habits ?? 0],
-        ["confidence", w.confidence ?? 0],
-        ["stability", w.stability ?? 0],
-      ] as [ "habits"|"confidence"|"stability", number ][];
-      const best = [...pairs].sort((a,b)=>b[1]-a[1])[0][0];
-      return guidance(best, (s as any)[best] ?? 0);
-    }
-
-    // Slider (or unanswered): nudge on weakest dimension so far
-    const dims = [
-      ["habits", s.maxHabits ? s.habits / s.maxHabits : 0],
-      ["confidence", s.maxConfidence ? s.confidence / s.maxConfidence : 0],
-      ["stability", s.maxStability ? s.stability / s.maxStability : 0],
-    ] as [ "habits"|"confidence"|"stability", number ][];
-    const weakest = [...dims].sort((a,b)=>a[1]-b[1])[0][0];
-    return guidance(weakest, (s as any)[weakest] ?? 0);
-  }, [q, chosenIdx, s]);
-
-  // Normalize tip to a plain string for JSX rendering
-  const tipText: string = useMemo(() => {
-    if (typeof tip === "string") return tip;
-    // If guidance() returns an object like { text, ... }, use its text field
-    const maybeObj: any = tip as any;
-    if (maybeObj && typeof maybeObj.text === "string") return maybeObj.text;
-    return "";
-  }, [tip]);
 
   function selectAnswer(idx:number) {
     if (!q) return;
@@ -105,17 +61,10 @@ export default function Assessment() {
         <QuestionCard q={q} locale={loc as "en"|"es"} onAnswer={selectAnswer} />
       )}
 
-      {/* Tip after choosing an option (or general nudge for sliders) */}
-      {(chosenIdx !== undefined || !hasOptions(q)) && (
-        <div className="bg-brand-50 border rounded-2xl p-4 text-sm text-slate-800 mb-4">
-          <b>{loc==="en" ? "Why this matters:" : "Por qué importa:"}</b> {tipText}
-        </div>
-      )}
-
       {/* Navigation buttons */}
-      <div className="flex gap-3">
+      <div className="mt-2 flex gap-2">
         <button onClick={back} disabled={i===0}
-          className="px-4 py-2 rounded-xl border disabled:opacity-50">
+          className="px-3 py-2 rounded-lg border disabled:opacity-50">
           {loc==="en" ? "Back" : "Atrás"}
         </button>
         {i < questions.length - 1 ? (
@@ -125,15 +74,15 @@ export default function Assessment() {
               if (answers[q.id] === undefined) return; // require an answer to proceed
               next();
             }}
-            className="px-4 py-2 rounded-xl bg-brand-500 text-white disabled:bg-slate-300"
-            disabled={!q || answers[q.id] === undefined}
+            className="px-4 py-2 rounded-lg bg-brand-500 text-white disabled:bg-slate-300"
+            disabled={answers[q.id] === undefined}
           >
             {loc==="en" ? "Next" : "Siguiente"}
           </button>
         ) : (
           <button
             onClick={goResults}
-            className="px-4 py-2 rounded-xl bg-brand-500 text-white"
+            className="px-4 py-2 rounded-lg bg-brand-500 text-white"
             disabled={!done}
           >
             {loc==="en" ? "See my results" : "Ver mis resultados"}
