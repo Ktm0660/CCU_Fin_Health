@@ -432,6 +432,61 @@ export type Score = {
   total: number; totalMax: number;
 };
 
+type GuidanceEntry = { upto: number; en: string; es: string };
+const GUIDANCE: Record<Dimension, GuidanceEntry[]> = {
+  habits: [
+    {
+      upto: 40,
+      en: "Small tweaks to how money leaves your account can add breathing room. Try one habit—like checking balances on pay day—to stay ahead.",
+      es: "Pequeños ajustes en cómo sale el dinero pueden darte respiro. Prueba un hábito—como revisar tu saldo el día de pago—para ir un paso adelante.",
+    },
+    {
+      upto: 75,
+      en: "You already juggle a lot. Listing bills in one spot and turning on alerts can keep spending predictable.",
+      es: "Ya manejas mucho. Anotar las cuentas en un solo lugar y activar alertas ayuda a que el gasto sea predecible.",
+    },
+    {
+      upto: 101,
+      en: "Your routines are working. Keep using calendars or automation so the system runs even on busy weeks.",
+      es: "Tus rutinas funcionan. Sigue usando calendarios o automatización para que el sistema funcione incluso en semanas ocupadas.",
+    },
+  ],
+  confidence: [
+    {
+      upto: 40,
+      en: "Money terms can feel heavy. Quick explainers and one conversation with a coach can replace stress with clarity.",
+      es: "Los términos financieros pueden pesar. Explicaciones rápidas y una charla con un asesor cambian estrés por claridad.",
+    },
+    {
+      upto: 75,
+      en: "You’re building knowledge. Keep asking questions and saving important links so decisions stay clear.",
+      es: "Estás construyendo conocimiento. Sigue haciendo preguntas y guarda enlaces importantes para decidir con claridad.",
+    },
+    {
+      upto: 101,
+      en: "You trust your plan. Share what works with family and keep your checklist handy for the next milestone.",
+      es: "Confías en tu plan. Comparte lo que te funciona con la familia y ten tu lista a la mano para el siguiente logro.",
+    },
+  ],
+  stability: [
+    {
+      upto: 40,
+      en: "Emergencies hit hardest without a buffer. Start tiny—automate $5 or use round-up tools so savings grows quietly.",
+      es: "Las emergencias pegan más fuerte sin colchón. Empieza pequeño—automatiza $5 o usa redondeo para que el ahorro crezca sin darte cuenta.",
+    },
+    {
+      upto: 75,
+      en: "You’re building protection. Naming your emergency fund and separating it from spending keeps momentum.",
+      es: "Estás creando protección. Ponerle nombre a tu fondo de emergencia y separarlo del gasto mantiene el impulso.",
+    },
+    {
+      upto: 101,
+      en: "You have a safety net. Refresh it a few times a year and celebrate how it protects your future plans.",
+      es: "Ya tienes red de seguridad. Revísala un par de veces al año y celebra cómo protege tus planes futuros.",
+    },
+  ],
+};
+
 function perDimMax() {
   let maxH=0, maxC=0, maxS=0;
   questions.forEach(q => {
@@ -486,6 +541,15 @@ export function scoreAnswers(ans: AnswerMap): Score {
 }
 
 export function partialScore(ans: AnswerMap) { return scoreAnswers(ans); }
+
+export function guidance(dim: Dimension, score: number) {
+  const { maxH, maxC, maxS } = perDimMax();
+  const max = dim === "habits" ? maxH : dim === "confidence" ? maxC : maxS;
+  const pct = (score / Math.max(1, max)) * 100;
+  const entries = GUIDANCE[dim];
+  const found = entries.find(entry => pct <= entry.upto);
+  return found ?? entries[entries.length - 1];
+}
 
 /* ---------- Five-bucket mapping ---------- */
 export type Bucket5 = BucketKey5;

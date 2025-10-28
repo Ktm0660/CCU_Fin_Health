@@ -5,6 +5,7 @@ import { personaCopy, getPersona } from "@/data/personas";
 import { recommend } from "@/data/recommendations";
 import Link from "next/link";
 import { t } from "@/lib/i18n";
+import { loadAnswers } from "@/lib/state";
 
 // NEW: lessons imports
 import { pickLessons, Area, Level } from "@/data/lessons";
@@ -30,8 +31,10 @@ export default function PlanPage() {
   const router = useRouter();
   const locale = (router.locale as "en" | "es") || "en";
   const ans = useMemo(() => {
-    try { return JSON.parse((router.query.a as string) || "{}"); }
-    catch { return {}; }
+    try {
+      if (router.query.a) return JSON.parse(router.query.a as string);
+      return loadAnswers();
+    } catch { return loadAnswers(); }
   }, [router.query.a]);
 
   const s = scoreAnswers(ans);
