@@ -5,6 +5,7 @@ import { scoreAnswers, bucketize5 } from "@/data/assessment";
 import { personaCopy, getPersona } from "@/data/personas";
 import { pickLessons, Area, Level } from "@/data/lessons";
 import LessonCard from "@/components/LessonCard";
+import { loadAnswers } from "@/lib/state";
 
 export default function Results() {
   const router = useRouter();
@@ -12,8 +13,10 @@ export default function Results() {
   const L = (en: string, es: string) => (locale === "en" ? en : es);
 
   const ans = useMemo(() => {
-    try { return JSON.parse((router.query.a as string) || "{}"); }
-    catch { return {}; }
+    try {
+      if (router.query.a) return JSON.parse(router.query.a as string);
+      return loadAnswers();
+    } catch { return loadAnswers(); }
   }, [router.query.a]);
 
   const s = scoreAnswers(ans);
