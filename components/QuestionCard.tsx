@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 // Minimal runtime guards; works even if types differ.
 type AnyQ = Record<string, any>;
 type Locale = "en" | "es";
@@ -20,6 +22,12 @@ export default function QuestionCard({ q, locale, onAnswer }: Props) {
   const text_en = (q?.text_en as string) ?? "";
   const text_es = (q?.text_es as string) ?? "";
   const prompt = locale === "en" ? text_en : text_es;
+
+  const [sliderValue, setSliderValue] = useState(50);
+
+  useEffect(() => {
+    setSliderValue(50);
+  }, [q]);
 
   // Resolve slider labels with robust fallbacks
   const left_en =
@@ -56,11 +64,11 @@ export default function QuestionCard({ q, locale, onAnswer }: Props) {
           min={0}
           max={100}
           step={1}
-          defaultValue={50}
+          value={sliderValue}
           onChange={(e) => {
-            // map 0..100 to 0..4 (5 buckets), inclusive
-            const raw = Number(e.target.value);
-            const bucket = Math.min(4, Math.max(0, Math.floor(raw / 20)));
+            const val = Number(e.target.value);
+            setSliderValue(val);
+            const bucket = Math.min(4, Math.max(0, Math.floor(val / 20)));
             onAnswer(bucket);
           }}
           className="mt-3 w-full appearance-none rounded-full"
