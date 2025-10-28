@@ -21,6 +21,7 @@ export default function Nav() {
           <Link href="/assessment" className="no-underline text-ink-900 hover:underline">{t(locale,"nav.assessment")}</Link>
           <Link href="/resources" className="no-underline text-ink-900 hover:underline">{t(locale,"nav.resources")}</Link>
           <Link href="/products" className="no-underline text-ink-900 hover:underline">{t(locale,"nav.products")}</Link>
+          <Link href="/glossary" className="no-underline text-ink-900 hover:underline">{t(locale,"nav.glossary")}</Link>
           <LanguageToggle />
         </div>
 

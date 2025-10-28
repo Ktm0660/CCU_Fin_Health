@@ -26,6 +26,7 @@ export default function Footer() {
           <ul className="mt-2 space-y-1">
             <li><Link className="no-underline" href="/assessment">{t(locale,"nav.assessment")}</Link></li>
             <li><Link className="no-underline" href="/resources">{t(locale,"nav.resources")}</Link></li>
+            <li><Link className="no-underline" href="/glossary">{t(locale,"nav.glossary")}</Link></li>
             <li><Link className="no-underline" href="/products">{t(locale,"nav.products")}</Link></li>
             <li><Link className="no-underline" href="/results">{t(locale,"nav.results")}</Link></li>
           </ul>

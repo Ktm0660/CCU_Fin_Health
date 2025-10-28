@@ -45,6 +45,7 @@ export default function MobileMenu() {
                 <li><Link className="no-underline block px-2 py-2 rounded-lg hover:bg-brand-50" href="/">{t(locale,"nav.home")}</Link></li>
                 <li><Link className="no-underline block px-2 py-2 rounded-lg hover:bg-brand-50" href="/assessment">{t(locale,"nav.assessment")}</Link></li>
                 <li><Link className="no-underline block px-2 py-2 rounded-lg hover:bg-brand-50" href="/resources">{t(locale,"nav.resources")}</Link></li>
+                <li><Link className="no-underline block px-2 py-2 rounded-lg hover:bg-brand-50" href="/glossary">{t(locale,"nav.glossary")}</Link></li>
                 <li><Link className="no-underline block px-2 py-2 rounded-lg hover:bg-brand-50" href="/products">{t(locale,"nav.products")}</Link></li>
                 <li><Link className="no-underline block px-2 py-2 rounded-lg hover:bg-brand-50" href="/results">{t(locale,"nav.results")}</Link></li>
                 <li><Link className="no-underline block px-2 py-2 rounded-lg hover:bg-brand-50" href="/plan">{t(locale,"nav.plan")}</Link></li>
