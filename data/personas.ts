@@ -1,130 +1,78 @@
 import type { Bucket5 } from "./assessment";
 
-export type PersonaKey =
-  | "rebuilder"
-  | "starter"
-  | "juggler"
-  | "balancer"
-  | "navigator"
-  | "builder";
-
-export type Buckets = {
-  habits: Bucket5;
-  confidence: Bucket5;
-  stability: Bucket5;
-};
-
+/** Order buckets from lowest to highest financial resilience. */
 const rank: Record<Bucket5, number> = {
-  rebuilding: 1,
-  getting_started: 2,
-  progress: 3,
-  on_track: 4,
-  empowered: 5,
+  at_risk: 1,       // legacy "rebuilding"
+  vulnerable: 2,    // legacy "getting_started"
+  building: 3,      // legacy "progress"
+  thriving: 4,      // legacy "on_track"
 };
 
-export function getPersona(b: Buckets): PersonaKey {
-  const H = rank[b.habits];
-  const C = rank[b.confidence];
-  const S = rank[b.stability];
+export type PersonaKey =
+  | "rebuilder"          // struggling with basics (maps to at_risk)
+  | "stabilizer"         // starting to gain footing (maps to vulnerable)
+  | "builder"            // building habits and buffers (maps to building)
+  | "planner"            // organized, future-oriented (maps to thriving)
+  | "optimizer";         // already strong, looking to optimize (maps to thriving)
 
-  // 1) Rebuilder
-  if (S <= 2 && (H <= 2 || C <= 2)) return "rebuilder";
+export type Persona = {
+  title: string;
+  summary: string;
+  // Which bucket(s) this persona typically represents (used for selection hints)
+  matches: Bucket5[];
+  tone: "warm" | "coach" | "celebrate";
+  nudge: string;
+};
 
-  // 2) Starter
-  if (H <= 2 && C <= 3 && S <= 3) return "starter";
+export const personas: Record<PersonaKey, Persona> = {
+  rebuilder: {
+    title: "Rebuilder",
+    summary:
+      "You’re in a tough stretch. Let’s make it calmer fast: one safety move, one bill rule, one win this week.",
+    matches: ["at_risk"],
+    tone: "warm",
+    nudge:
+      "Start tiny and repeatable: $10 auto-save, autopay minimums, and ask for one fee waiver. Momentum beats perfection.",
+  },
+  stabilizer: {
+    title: "Stabilizer",
+    summary:
+      "You’ve got pieces in place, now we’ll lock in a simple rhythm so surprises don’t derail you.",
+    matches: ["vulnerable"],
+    tone: "coach",
+    nudge:
+      "Build a $250 buffer, pick a debt snowball/avalanche, and pre-plan one weekly grocery list.",
+  },
+  builder: {
+    title: "Builder",
+    summary:
+      "Habits are forming. Next step: automate the boring parts and speed up your savings.",
+    matches: ["building"],
+    tone: "coach",
+    nudge:
+      "Round-up savings, 3% 401(k) (if available), and a once-a-month ‘money hour’ to review & adjust.",
+  },
+  planner: {
+    title: "Planner",
+    summary:
+      "You run your money like a project. Let’s align with 6–12 month goals and protect against surprises.",
+    matches: ["thriving"],
+    tone: "celebrate",
+    nudge:
+      "Target 1–3 months expenses in cash, automate sinking funds (auto/medical/holidays), and set a quarterly goal check.",
+  },
+  optimizer: {
+    title: "Optimizer",
+    summary:
+      "Strong foundation. Now it’s about efficiency, fees, and long-term strategy for the big goals.",
+    matches: ["thriving"],
+    tone: "celebrate",
+    nudge:
+      "Refine insurance deductibles, trim account fees, and map a 3-year plan (credit score, debt-free date, savings milestones).",
+  },
+};
 
-  // 3) Juggler
-  if (H >= 3 && C >= 3 && S <= 3) return "juggler";
-
-  // 4) Balancer
-  if (H >= 3 && H <= 4 && C >= 3 && C <= 4 && S >= 3 && S <= 4) return "balancer";
-
-  // 5) Navigator
-  if (C >= 4 && (H >= 4 || S >= 4) && H > 2 && S > 2) return "navigator";
-
-  // 6) Builder (fallback)
-  return "builder";
-}
-
-type Locale = "en" | "es";
-
-export function personaCopy(locale: Locale) {
-  const L = (en: string, es: string) => (locale === "en" ? en : es);
-
-  return {
-    label: {
-      rebuilder: L("The Rebuilder", "La Reconstrucción"),
-      starter: L("The Starter", "Quien Comienza"),
-      juggler: L("The Juggler", "Quien Hace Malabares"),
-      balancer: L("The Balancer", "El Equilibrado"),
-      navigator: L("The Navigator", "La/El Navegante"),
-      builder: L("The Builder", "Quien Construye"),
-    } as const,
-    icon: {
-      rebuilder: "🧰",
-      starter: "🌱",
-      juggler: "🤹",
-      balancer: "⚖️",
-      navigator: "🧭",
-      builder: "🧱",
-    } as const,
-    summary: {
-      rebuilder: L(
-        "You’re under real pressure. We’ll shrink stress fast with small, steady wins.",
-        "Estás bajo presión real. Reduciremos el estrés con logros pequeños y constantes."
-      ),
-      starter: L(
-        "You’re ready to get organized. Simple rails will make every month easier.",
-        "Estás listo para organizarte. Rieles simples harán cada mes más fácil."
-      ),
-      juggler: L(
-        "Your routines work, but the buffer feels thin. Time to build cushioning.",
-        "Tus rutinas funcionan, pero el colchón es delgado. Es hora de engrosarlo."
-      ),
-      balancer: L(
-        "Solid patterns and careful choices. Let’s tune and plan ahead.",
-        "Patrones sólidos y decisiones cuidadosas. Afinemos y planifiquemos."
-      ),
-      navigator: L(
-        "You compare options and plan ahead. Keep compounding smart moves.",
-        "Comparas opciones y planificas. Sigue acumulando decisiones inteligentes."
-      ),
-      builder: L(
-        "Momentum is building. Keep stacking simple wins.",
-        "El impulso crece. Sigue sumando logros simples."
-      ),
-    } as const,
-    steps: {
-      rebuilder: [
-        L("Start a $100–$300 mini emergency fund.", "Inicia un fondo de emergencia de $100–$300."),
-        L("Set one bill to autopay (minimum).", "Activa pago automático en una cuenta (mínimo)."),
-        L("Make one debt relief move (rate reduction or plan).", "Da un paso de alivio de deuda (baja tasa o plan)."),
-      ],
-      starter: [
-        L("Use a one-page spending list (Needs → Bills → Wants).", "Usa una lista simple (Necesidades → Cuentas → Gustos)."),
-        L("Turn on low-balance and large-purchase alerts.", "Activa alertas de saldo bajo y compras grandes."),
-        L("Autosave $10/week to a separate space.", "Ahorra $10/semana en un espacio separado."),
-      ],
-      juggler: [
-        L("Create sinking funds for car/home/medical.", "Crea apartados para auto/hogar/médico."),
-        L("Automate a small ‘buffer’ transfer on payday.", "Automatiza un pequeño ‘colchón’ en día de pago."),
-        L("Review 1 recurring bill to optimize.", "Optimiza 1 gasto recurrente."),
-      ],
-      balancer: [
-        L("Schedule a monthly 15-minute money check-in.", "Agenda una revisión mensual de 15 minutos."),
-        L("Raise autosave by a small step-up.", "Aumenta el ahorro automático un poco."),
-        L("Plan for one big expense 3–6 months ahead.", "Planifica un gasto grande con 3–6 meses."),
-      ],
-      navigator: [
-        L("Name sub-accounts by goal and automate them.", "Nombra subcuentas por meta y automatízalas."),
-        L("Compare two offers before borrowing.", "Compara dos ofertas antes de pedir."),
-        L("Mentor a friend or share what worked.", "Apoya a alguien compartiendo lo que te funcionó."),
-      ],
-      builder: [
-        L("Write your next goal and deadline.", "Escribe tu próxima meta y fecha."),
-        L("Set calendar nudges for monthly check-ins.", "Activa recordatorios para revisiones mensuales."),
-        L("Pull your free credit report and note 1 action.", "Descarga tu reporte de crédito y define 1 acción."),
-      ],
-    } as const,
-  };
+/** Helper to compare buckets by resilience. Higher is better. */
+export function compareBuckets(a: Bucket5, b: Bucket5) {
+  return rank[a] - rank[b];
 }
