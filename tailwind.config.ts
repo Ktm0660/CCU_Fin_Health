@@ -36,10 +36,10 @@ const config: Config = {
         soft: "0 1px 3px rgba(16, 24, 40, 0.06), 0 1px 2px rgba(16, 24, 40, 0.04)"
       },
       keyframes: {
-        fadeIn: { from: { opacity: 0 }, to: { opacity: 1 } },
+        fadeIn: { from: { opacity: "0" }, to: { opacity: "1" } },
         slideUp: {
-          from: { transform: "translateY(6px)", opacity: 0 },
-          to: { transform: "translateY(0)", opacity: 1 }
+          from: { transform: "translateY(6px)", opacity: "0" },
+          to: { transform: "translateY(0)", opacity: "1" }
         },
         pop: { from: { transform: "scale(0.98)" }, to: { transform: "scale(1)" } }
       },
