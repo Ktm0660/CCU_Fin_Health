@@ -44,7 +44,7 @@ export default function Home() {
                 <div className="mt-7 flex flex-col sm:flex-row gap-3">
                   <Link
                     href="/assessment"
-                    className="inline-flex items-center justify-center rounded-xl bg-brand-500 px-6 py-4 text-white no-underline text-base shadow-soft hover:brightness-110 active:scale-[0.99] transition w-full sm:w-auto"
+                    className="btn btn-secondary w-full sm:w-auto px-6 py-4 text-base no-underline shadow-soft active:scale-[0.99]"
                   >
                     {t("Start my free checkup", "Empezar mi evaluación gratis")}
                   </Link>
@@ -62,22 +62,28 @@ export default function Home() {
                 </p>
 
                 {/* INFO TILES — more breathing room on mobile */}
-                <div className="mt-9 grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <InfoTile
-                    emoji="💡"
-                    title={t("Clarity in minutes", "Claridad en minutos")}
-                    body={t("Understand where you stand—without spreadsheets.", "Entiende dónde estás—sin hojas de cálculo.")}
-                  />
-                  <InfoTile
-                    emoji="🌾"
-                    title={t("Made for our communities", "Hecho para nuestras comunidades")}
-                    body={t("Plain-language guidance that respects your life and time.", "Guía simple que respeta tu vida y tu tiempo.")}
-                  />
-                  <InfoTile
-                    emoji="🧭"
-                    title={t("Simple next steps", "Pasos simples")}
-                    body={t("Walk away with a plan you can actually follow.", "Sal con un plan que realmente puedas seguir.")}
-                  />
+                <div className="mt-9 grid sm:grid-cols-3 gap-3 md:gap-4">
+                  <div
+                    className="bg-white border rounded-2xl p-4 shadow-soft motion-safe:animate-slide-up stagger"
+                    style={{ animationDelay: "80ms", background: "linear-gradient(145deg, rgba(11,20,67,0.04), rgba(0,106,78,0.02))" }}
+                  >
+                    <h3 className="font-semibold text-ink-900">{t("Clarity", "Claridad")}</h3>
+                    <p className="text-sm text-slate-700 mt-1">{t("Jargon-free help and tools you can actually use.", "Ayuda sin jerga y herramientas que realmente puedes usar.")}</p>
+                  </div>
+                  <div
+                    className="bg-white border rounded-2xl p-4 shadow-soft motion-safe:animate-slide-up stagger"
+                    style={{ animationDelay: "140ms", background: "linear-gradient(145deg, rgba(11,20,67,0.035), rgba(0,106,78,0.02))" }}
+                  >
+                    <h3 className="font-semibold text-ink-900">{t("Made for communities", "Hecho para comunidades")}</h3>
+                    <p className="text-sm text-slate-700 mt-1">{t("Mobile branch + bilingual content to meet you where you are.", "Sucursal móvil + contenido bilingüe para encontrarte donde estás.")}</p>
+                  </div>
+                  <div
+                    className="bg-white border rounded-2xl p-4 shadow-soft motion-safe:animate-slide-up stagger"
+                    style={{ animationDelay: "200ms", background: "linear-gradient(145deg, rgba(11,20,67,0.03), rgba(0,106,78,0.02))" }}
+                  >
+                    <h3 className="font-semibold text-ink-900">{t("Simple next steps", "Pasos simples")}</h3>
+                    <p className="text-sm text-slate-700 mt-1">{t("One small win this week beats a perfect plan later.", "Un pequeño logro esta semana vale más que un plan perfecto después.")}</p>
+                  </div>
                 </div>
               </div>
 
@@ -106,22 +112,6 @@ export default function Home() {
         </section>
       </main>
     </>
-  );
-}
-
-function InfoTile({ emoji, title, body }:{ emoji:string; title:string; body:string }) {
-  return (
-    <div className="rounded-xl bg-white p-5 border shadow-soft motion-safe:animate-slide-up">
-      <div className="flex items-start gap-3">
-        <div className="h-9 w-9 rounded-full bg-white/80 flex items-center justify-center text-lg border" aria-hidden>
-          {emoji}
-        </div>
-        <div>
-          <p className="font-semibold text-ink-900 text-[16px] leading-tight">{title}</p>
-          <p className="text-sm text-slate-700 leading-relaxed mt-1">{body}</p>
-        </div>
-      </div>
-    </div>
   );
 }
 

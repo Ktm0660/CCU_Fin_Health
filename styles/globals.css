@@ -16,7 +16,8 @@
   }
   h1,h2,h3 { @apply text-slate-900; }
   p { @apply leading-relaxed; }
-  a { @apply text-brand-600 hover:text-brand-700 underline-offset-2; }
+  a { @apply transition; }
+  a:hover { color: var(--ccu-blue); }
 }
 
 /* Motion safety */
@@ -32,8 +33,15 @@
   .btn-primary {
     @apply bg-brand-500 text-white border-brand-500 hover:brightness-110 active:scale-[0.99];
   }
+  .btn-secondary { background: var(--ccu-blue); color: white; border-color: var(--ccu-blue); }
   .btn-ghost {
     @apply bg-white text-slate-900 hover:bg-slate-50 border-slate-200;
+  }
+  .accent-underline { position: relative; }
+  .accent-underline::after {
+    content: ""; position: absolute; left: 0; bottom: -6px; height: 3px; width: 56px;
+    background: linear-gradient(90deg, var(--ccu-blue), var(--ccu-green));
+    border-radius: 9999px;
   }
 }
 
@@ -75,3 +83,6 @@ input[type="range"]:focus { outline: none; }
 input[type="range"]:focus::-webkit-slider-thumb {
   box-shadow: 0 0 0 4px rgba(0,106,78,0.22);
 }
+
+/* Simple stagger utility (use inline style for delays) */
+.stagger { animation-fill-mode: both; }

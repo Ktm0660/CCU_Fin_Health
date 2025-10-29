@@ -44,9 +44,9 @@ const config: Config = {
         pop: { from: { transform: "scale(0.98)" }, to: { transform: "scale(1)" } }
       },
       animation: {
-        "fade-in": "fadeIn 300ms ease-out",
-        "slide-up": "slideUp 300ms ease-out",
-        pop: "pop 120ms ease-out"
+        "fade-in": "fadeIn 300ms ease-out both",
+        "slide-up": "slideUp 320ms ease-out both",
+        pop: "pop 140ms ease-out both"
       }
     }
   },

@@ -13,11 +13,19 @@ export default function Results() {
   const L = (en: string, es: string) => (locale === "en" ? en : es);
 
   const ans = useMemo(() => {
-    try {
-      if (router.query.a) return JSON.parse(router.query.a as string);
-      return loadAnswers();
-    } catch { return loadAnswers(); }
-  }, [router.query.a]);
+    let parsed: any = null;
+    const q = router.query?.a as string | undefined;
+    if (q) {
+      try { parsed = JSON.parse(q); } catch {}
+    }
+    if (!parsed && typeof window !== "undefined") {
+      try { parsed = JSON.parse(localStorage.getItem("ccu:lastAnswers") || "{}"); } catch {}
+    }
+    if (!parsed) {
+      try { parsed = loadAnswers(); } catch {}
+    }
+    return parsed || {};
+  }, [router.query?.a]);
 
   const s = scoreAnswers(ans);
   const buckets = {
@@ -75,12 +83,31 @@ export default function Results() {
 
   return (
     <section className="motion-safe:animate-fade-in">
+      <div className="flex flex-wrap items-end gap-3 mb-6">
+        <h1 className="text-2xl md:text-3xl font-semibold text-ink-900 mb-2 accent-underline">
+          {locale==="en" ? "Your Financial Health Results" : "Tus resultados de salud financiera"}
+        </h1>
+        <span
+          className="inline-flex items-center px-2 py-1 rounded-full text-xs"
+          style={{ background: "rgba(11,20,67,0.06)", color: "var(--ccu-blue)" }}
+        >
+          {L("Updated", "Actualizado")}
+        </span>
+      </div>
       {/* HERO SUMMARY */}
       <div className="relative overflow-hidden rounded-3xl border shadow-soft bg-gradient-to-b from-brand-50 via-white to-white p-6 md:p-10">
         <div className="max-w-3xl">
-          <h1 className="text-[28px] leading-tight md:text-4xl font-extrabold text-ink-900">
-            {pcopy.icon[persona]} {pcopy.label[persona]}
-          </h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h2 className="text-[28px] leading-tight md:text-4xl font-extrabold text-ink-900">
+              {pcopy.icon[persona]} {pcopy.label[persona]}
+            </h2>
+            <span
+              className="inline-flex items-center px-3 py-1.5 rounded-full text-xs md:text-sm"
+              style={{ background: "rgba(11,20,67,0.06)", color: "var(--ccu-blue)" }}
+            >
+              {L("Overall snapshot", "Panorama general")}
+            </span>
+          </div>
           <p className="mt-3 text-[16px] md:text-lg text-slate-800">
             {pcopy.summary[persona]}
           </p>
