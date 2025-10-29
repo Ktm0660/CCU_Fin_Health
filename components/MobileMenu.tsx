@@ -43,7 +43,12 @@ export default function MobileMenu() {
             <nav className="mt-4 flex-1">
               <ul className="space-y-2 text-base">
                 <li><Link className="no-underline block px-2 py-2 rounded-lg hover:bg-brand-50" href="/">{t(locale,"nav.home")}</Link></li>
-                <li><Link className="no-underline block px-2 py-2 rounded-lg hover:bg-brand-50" href="/assessment">{t(locale,"nav.assessment")}</Link></li>
+                <li className="space-y-1">
+                  <Link className="no-underline block px-2 py-2 rounded-lg hover:bg-brand-50" href="/assessment">{t(locale,"nav.assessment")}</Link>
+                  <Link className="no-underline block px-3 py-1 text-sm text-ink-700/80" href="/assessment-v2">
+                    {locale==="es" ? "Evaluación (Beta)" : "Assessment (Beta)"}
+                  </Link>
+                </li>
                 <li><Link className="no-underline block px-2 py-2 rounded-lg hover:bg-brand-50" href="/resources">{t(locale,"nav.resources")}</Link></li>
                 <li><Link className="no-underline block px-2 py-2 rounded-lg hover:bg-brand-50" href="/glossary">{t(locale,"nav.glossary")}</Link></li>
                 <li><Link className="no-underline block px-2 py-2 rounded-lg hover:bg-brand-50" href="/products">{t(locale,"nav.products")}</Link></li>

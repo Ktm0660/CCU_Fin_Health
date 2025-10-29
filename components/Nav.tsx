@@ -21,7 +21,12 @@ export default function Nav() {
         {/* Desktop links */}
         <div className="hidden md:flex items-center gap-5 text-sm">
           <Link href="/" className="no-underline text-ink-900 hover:text-brand-500">{t(locale,"nav.home")}</Link>
-          <Link href="/assessment" className="no-underline text-ink-900 hover:text-brand-500">{t(locale,"nav.assessment")}</Link>
+          <div className="flex items-center gap-2">
+            <Link href="/assessment" className="no-underline text-ink-900 hover:text-brand-500">{t(locale,"nav.assessment")}</Link>
+            <Link href="/assessment-v2" className="text-sm opacity-80 hover:opacity-100">
+              {locale==="es" ? "Evaluación (Beta)" : "Assessment (Beta)"}
+            </Link>
+          </div>
           <Link href="/resources" className="no-underline text-ink-900 hover:text-brand-500">{t(locale,"nav.resources")}</Link>
           <Link href="/products" className="no-underline text-ink-900 hover:text-brand-500">{t(locale,"nav.products")}</Link>
           <Link href="/glossary" className="no-underline text-ink-900 hover:text-brand-500">{t(locale,"nav.glossary")}</Link>
