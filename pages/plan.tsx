@@ -2,6 +2,7 @@ import { useRouter } from "next/router";
 import { useMemo } from "react";
 import * as Assess from "@/data/assessment";
 import { scoreAnswers, bucketize5 } from "@/data/assessment";
+import type { Bucket5 } from "@/data/assessment";
 import { personaCopy, getPersona } from "@/data/personas";
 import { recommend } from "@/data/recommendations";
 import Link from "next/link";
@@ -48,21 +49,25 @@ export default function PlanPage() {
     (Assess as any).qset ||
     [];
   const s = scoreAnswers(ans, qs);
-  // Pillar-agnostic bucketing: find all score fields that are not totals and not max*.
-  const pillarKeys = Object.keys(s).filter(
-    (k) => k !== "total" && k !== "totalMax" && !k.startsWith("max")
-  );
   // Helper to resolve corresponding max key in either "maxXxx" or "max_xxx" form
   const maxFor = (k: string) => {
     const pascal = "max" + k.charAt(0).toUpperCase() + k.slice(1);
     const snake = "max_" + k;
     return (s as any)[pascal] ?? (s as any)[snake] ?? 0;
   };
-  const buckets: Record<string, ReturnType<typeof bucketize5>> = {};
-  for (const k of pillarKeys) {
+  const buckets = {} as Record<
+    "habits" | "confidence" | "stability" | "access" | "knowledge",
+    Bucket5
+  >;
+
+  const dims: ("habits" | "confidence" | "stability" | "access" | "knowledge")[] =
+    ["habits", "confidence", "stability", "access", "knowledge"];
+
+  for (const k of dims) {
     const val = (s as any)[k] ?? 0;
     const max = maxFor(k);
-    buckets[k] = bucketize5(val, max);
+    const pct = max > 0 ? val / max : 0;
+    buckets[k] = bucketize5(pct);
   }
 
   // Persona engine
