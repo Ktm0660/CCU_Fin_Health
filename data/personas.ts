@@ -1,20 +1,16 @@
 import type { Bucket5 } from "./assessment";
 
-/** Canonical 4-bucket model */
-export type BucketKey5 = Bucket5; // alias for clarity
+export type BucketKey5 = Bucket5;
 
-/** Persona keys tied to buckets */
 export type PersonaKey =
-  | "rebuilder"        // at_risk
-  | "stabilizer"       // vulnerable
-  | "builder"          // building
-  | "optimizer";       // thriving
+  | "rebuilder"
+  | "stabilizer"
+  | "builder"
+  | "optimizer";
 
 export type Localized<T> = { en: T; es: T };
+const L = <T extends string | string[]>(en: T, es: T): Localized<T> => ({ en, es });
 
-const L = <T extends string>(en: T, es: T): Localized<T> => ({ en, es });
-
-/** Map a bucket to a persona key */
 export function getPersona(bucket: BucketKey5): PersonaKey {
   switch (bucket) {
     case "at_risk":
@@ -30,7 +26,6 @@ export function getPersona(bucket: BucketKey5): PersonaKey {
   }
 }
 
-/** Display labels for personas */
 export const personaLabels: Record<PersonaKey, Localized<string>> = {
   rebuilder: L("Rebuilder", "Reconstruyendo"),
   stabilizer: L("Stabilizer", "Estabilizando"),
@@ -38,7 +33,6 @@ export const personaLabels: Record<PersonaKey, Localized<string>> = {
   optimizer: L("Optimizer", "Optimizando"),
 };
 
-/** Persona copy blocks used on the Plan/Results screens */
 export const personaCopy: Record<
   PersonaKey,
   {
@@ -46,7 +40,7 @@ export const personaCopy: Record<
     subtitle: Localized<string>;
     about: Localized<string>;
     focus: Localized<string[]>;
-    30day: Localized<string[]>;
+    plan30day: Localized<string[]>; // ✅ renamed field
   }
 > = {
   rebuilder: {
@@ -71,7 +65,7 @@ export const personaCopy: Record<
         "Una revisión semanal de 10 minutos.",
       ]
     ),
-    30day: L(
+    plan30day: L(
       [
         "Open a no-fee savings; set $10–$15 auto-transfer.",
         "List bills by due date; enable autopay minimums.",
@@ -107,7 +101,7 @@ export const personaCopy: Record<
         "Fondos de reserva: auto/médico/festivos.",
       ]
     ),
-    30day: L(
+    plan30day: L(
       [
         "Add one sinking fund (car repair) with auto-save.",
         "Set a ‘needs-first’ grocery list template.",
@@ -143,7 +137,7 @@ export const personaCopy: Record<
         "Audita comisiones y elimina cargos evitables.",
       ]
     ),
-    30day: L(
+    plan30day: L(
       [
         "Refinance or consolidate one high-APR balance (if eligible).",
         "Auto-bump savings by $10/month.",
@@ -179,7 +173,7 @@ export const personaCopy: Record<
         "Revisa seguros y opciones de tasas.",
       ]
     ),
-    30day: L(
+    plan30day: L(
       [
         "Raise emergency fund auto-save by 5–10%.",
         "Annual ‘rate check’ on loans and CDs.",
