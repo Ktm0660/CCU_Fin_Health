@@ -3,19 +3,48 @@
 @tailwind utilities;
 
 :root {
-  --card: #ffffff;
-  --ring: #299a7f;
+  --ccu-green: #006a4e;
+  --ccu-blue: #0b1443;
 }
-a { @apply text-brand-600 hover:text-brand-700 underline-offset-2; }
 
-/* ===== Range input (assessment sliders) ===== */
+/* Base readability */
+@layer base {
+  html { scroll-behavior: smooth; }
+  body {
+    @apply bg-slate-50 text-slate-900;
+    font-feature-settings: "kern", "liga", "clig";
+  }
+  h1,h2,h3 { @apply text-slate-900; }
+  p { @apply leading-relaxed; }
+  a { @apply text-brand-600 hover:text-brand-700 underline-offset-2; }
+}
+
+/* Motion safety */
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+
+/* Buttons helper (optional tiny polish without refactoring components) */
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 font-medium shadow-soft border bg-white transition;
+  }
+  .btn-primary {
+    @apply bg-brand-500 text-white border-brand-500 hover:brightness-110 active:scale-[0.99];
+  }
+  .btn-ghost {
+    @apply bg-white text-slate-900 hover:bg-slate-50 border-slate-200;
+  }
+}
+
+/* ===== Range input (assessment sliders): larger thumb, CCU colors (kept from prior patch) ===== */
 input[type="range"] {
   height: 36px;
   background: transparent;
 }
 input[type="range"]::-webkit-slider-runnable-track {
   height: 8px;
-  background: #E5E7EB; /* slate-200 */
+  background: #E5E7EB;
   border-radius: 9999px;
 }
 input[type="range"]::-moz-range-track {
@@ -28,23 +57,21 @@ input[type="range"]::-webkit-slider-thumb {
   appearance: none;
   width: 28px;
   height: 18px;
-  background: #10B981; /* brand-500-ish */
-  border-radius: 6px;    /* rectangular-ish for grip */
-  margin-top: -5px;      /* centers on track */
-  box-shadow: 0 0 0 2px rgba(16,185,129,0.2);
+  background: var(--ccu-green);
+  border-radius: 6px;
+  margin-top: -5px;
+  box-shadow: 0 0 0 2px rgba(0,106,78,0.18);
   cursor: pointer;
 }
 input[type="range"]::-moz-range-thumb {
   width: 28px;
   height: 18px;
-  background: #10B981;
+  background: var(--ccu-green);
   border: none;
   border-radius: 6px;
   cursor: pointer;
 }
-input[type="range"]:focus {
-  outline: none;
-}
+input[type="range"]:focus { outline: none; }
 input[type="range"]:focus::-webkit-slider-thumb {
-  box-shadow: 0 0 0 4px rgba(16,185,129,0.25);
+  box-shadow: 0 0 0 4px rgba(0,106,78,0.22);
 }

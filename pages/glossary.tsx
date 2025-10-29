@@ -63,12 +63,12 @@ export default function Glossary() {
   }, [q, lang]);
 
   return (
-    <section>
+    <section className="motion-safe:animate-fade-in">
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-ink-900">{lang==="en" ? "Jargon Breakdown" : "Glosario sin jerga"}</h1>
         <button
           onClick={() => setLang((p)=> p==="en" ? "es" : "en")}
-          className="px-3 py-1 rounded-xl border"
+          className="px-3 py-1 rounded-xl border transition hover:bg-brand-50"
           aria-label="Toggle language"
         >
           {lang==="en" ? "Español" : "English"}
@@ -84,13 +84,13 @@ export default function Glossary() {
       <input
         aria-label={lang==="en" ? "Search terms" : "Buscar términos"}
         value={q} onChange={(e)=>setQ(e.target.value)}
-        className="w-full rounded-xl border p-2 mb-4"
+        className="w-full rounded-xl border p-2 mb-4 shadow-soft focus:outline-none focus:ring-2 focus:ring-brand-300"
         placeholder={lang==="en" ? "Search terms…" : "Buscar términos…"}
       />
 
       <ul className="space-y-3">
         {list.map((item) => (
-          <li key={item.key} className="bg-white rounded-2xl shadow p-4 border">
+          <li key={item.key} className="bg-white rounded-2xl shadow-soft p-4 border motion-safe:animate-fade-in">
             <div className="flex items-baseline justify-between gap-3">
               <h3 className="font-semibold text-ink-900">
                 {lang==="en" ? item.term_en : item.term_es}

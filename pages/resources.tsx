@@ -47,7 +47,7 @@ export default function ResourcesPage() {
   const T = (en:string, es:string)=> locale==="en" ? en : es;
 
   return (
-    <section className="py-6">
+    <section className="py-6 motion-safe:animate-fade-in">
       <div className="max-w-3xl md:max-w-4xl mx-auto px-4">
         <h1 className="text-[28px] md:text-4xl leading-tight font-bold text-ink-900 mt-1 mb-1.5">
           {T("Tools & Resources", "Herramientas y recursos")}
@@ -60,7 +60,7 @@ export default function ResourcesPage() {
         </p>
 
         {/* Filters */}
-        <div className="bg-white rounded-2xl border p-3 md:p-5 mb-4 md:mb-6 sticky top-[56px] z-10 md:static md:top-auto backdrop-blur supports-[backdrop-filter]:bg-white/80">
+        <div className="bg-white rounded-2xl border shadow-soft p-3 md:p-5 mb-4 md:mb-6 sticky top-[56px] z-10 md:static md:top-auto backdrop-blur supports-[backdrop-filter]:bg-white/80">
           <div className="flex flex-col md:flex-row gap-3 md:items-end">
             <div className="flex-1">
               <label className="text-xs text-slate-600">{T("Topic","Tema")}</label>
@@ -69,10 +69,10 @@ export default function ResourcesPage() {
                   <button
                     key={a.key as string}
                     onClick={()=>setArea(a.key as Area|"all")}
-                    className={`px-3 py-1.5 rounded-full border text-sm whitespace-nowrap transition-colors ${
+                    className={`px-3 py-1.5 rounded-full border text-sm whitespace-nowrap transition ${
                       area===a.key
-                        ? "bg-emerald-600 text-white border-emerald-600"
-                        : "bg-white text-ink-900 hover:border-emerald-300"
+                        ? "bg-brand-500 text-white border-brand-500 shadow-soft"
+                        : "bg-white text-ink-900 hover:border-brand-300"
                     }`}
                   >
                     {T(a.en,a.es)}
@@ -87,10 +87,10 @@ export default function ResourcesPage() {
                   <button
                     key={t.key as string}
                     onClick={()=>setType(t.key as RType|"all")}
-                    className={`px-3 py-1.5 rounded-full border text-sm whitespace-nowrap transition-colors ${
+                    className={`px-3 py-1.5 rounded-full border text-sm whitespace-nowrap transition ${
                       type===t.key
-                        ? "bg-slate-900 text-white border-slate-900"
-                        : "bg-white text-ink-900 hover:border-emerald-300"
+                        ? "bg-ink-900 text-white border-ink-900 shadow-soft"
+                        : "bg-white text-ink-900 hover:border-brand-300"
                     }`}
                   >
                     {T(t.en,t.es)}

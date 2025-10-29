@@ -9,7 +9,7 @@ export default function ResourceCard({ r, locale }:{ r: Resource; locale: "en"|"
     "bg-brand-50 text-brand-700 border-brand-200";
 
   return (
-    <div className="bg-white border rounded-2xl p-4 md:p-5 shadow-sm hover:shadow transition-shadow">
+    <div className="bg-white border rounded-2xl p-4 md:p-5 shadow-soft hover:shadow transition-shadow motion-safe:animate-fade-in">
       <div className="flex items-start gap-3">
         <div className="h-9 w-9 rounded-full border bg-brand-50 flex items-center justify-center text-sm" aria-hidden>🧩</div>
         <div className="flex-1">

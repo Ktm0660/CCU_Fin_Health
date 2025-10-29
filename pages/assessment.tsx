@@ -43,7 +43,7 @@ export default function Assessment() {
   }
 
   return (
-    <section>
+    <section className="motion-safe:animate-fade-in">
       <h1 className="text-2xl font-semibold text-ink-900 mb-2">
         {loc==="en" ? "Connections Financial Health & Trust Assessment" : "Evaluación de Salud Financiera y Confianza"}
       </h1>
@@ -64,7 +64,7 @@ export default function Assessment() {
       {/* Navigation buttons */}
       <div className="mt-2 flex gap-2">
         <button onClick={back} disabled={i===0}
-          className="px-3 py-2 rounded-lg border disabled:opacity-50">
+          className="px-3 py-2 rounded-lg border disabled:opacity-50 transition hover:bg-brand-50">
           {loc==="en" ? "Back" : "Atrás"}
         </button>
         {i < questions.length - 1 ? (
@@ -74,7 +74,7 @@ export default function Assessment() {
               if (answers[q.id] === undefined) return; // require an answer to proceed
               next();
             }}
-            className="px-4 py-2 rounded-lg bg-brand-500 text-white disabled:bg-slate-300"
+            className="px-4 py-2 rounded-lg bg-brand-500 text-white disabled:bg-slate-300 shadow-soft hover:brightness-110 active:scale-[0.99] transition"
             disabled={answers[q.id] === undefined}
           >
             {loc==="en" ? "Next" : "Siguiente"}
@@ -82,7 +82,7 @@ export default function Assessment() {
         ) : (
           <button
             onClick={goResults}
-            className="px-4 py-2 rounded-lg bg-brand-500 text-white"
+            className="px-4 py-2 rounded-lg bg-brand-500 text-white shadow-soft hover:brightness-110 active:scale-[0.99] transition"
             disabled={!done}
           >
             {loc==="en" ? "See my results" : "Ver mis resultados"}
