@@ -1,8 +1,8 @@
 import { useRouter } from "next/router";
 import { useMemo } from "react";
 import * as Assess from "@/data/assessment";
+import type { BucketKey5 } from "@/data/assessment";
 import { scoreAnswers, bucketize5 } from "@/data/assessment";
-import type { Bucket5 } from "@/data/assessment";
 import { personaCopy, getPersona } from "@/data/personas";
 import { recommend } from "@/data/recommendations";
 import Link from "next/link";
@@ -57,7 +57,7 @@ export default function PlanPage() {
   };
   const buckets = {} as Record<
     "habits" | "confidence" | "stability" | "access" | "knowledge",
-    Bucket5
+    BucketKey5
   >;
 
   const dims: ("habits" | "confidence" | "stability" | "access" | "knowledge")[] =
@@ -74,14 +74,29 @@ export default function PlanPage() {
   type Locale = "en" | "es";
   const pick = <T,>(loc: Locale, v: { en: T; es: T }) => v[loc];
 
-  const persona = getPersona(buckets);
+  // Rank order for 5-level buckets (1 = weakest)
+  const rankOrder: Record<BucketKey5, number> = {
+    rebuilding: 1,
+    getting_started: 2,
+    progress: 3,
+    on_track: 4,
+    empowered: 5,
+  };
+
+  // Compute overall as the weakest dimension
+  const overall: BucketKey5 = (Object.values(buckets) as BucketKey5[]).reduce(
+    (weakest, cur) => (rankOrder[cur] < rankOrder[weakest] ? cur : weakest),
+    "empowered" // initial high value that will be replaced
+  );
+
+  const persona = getPersona(overall);
   const P = personaCopy[persona];
 
   const personaTitle = pick(locale as Locale, P.title);
   const personaSubtitle = pick(locale as Locale, P.subtitle);
   const personaAbout = pick(locale as Locale, P.about);
   const personaFocus = pick(locale as Locale, P.focus);
-  const personaPlan = pick(locale as Locale, P.plan30day);
+  const personaPlan  = pick(locale as Locale, P.plan30day);
 
   const rank: Record<Bucket, number> = {
     rebuilding: 1,
