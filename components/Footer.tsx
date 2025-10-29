@@ -8,8 +8,8 @@ export default function Footer() {
   const locale = (router.locale as "en"|"es") || "en";
 
   return (
-    <footer className="border-t bg-white">
-      <div className="mx-auto max-w-6xl px-4 py-8 text-sm text-slate-700 grid md:grid-cols-3 gap-6">
+    <footer className="border-t bg-white mt-8 motion-safe:animate-fade-in">
+      <div className="mx-auto max-w-3xl md:max-w-4xl px-4 py-6 text-sm text-slate-700 grid md:grid-cols-3 gap-5">
         <div>
           <p className="font-semibold text-ink-900">Connections</p>
           <p className="mt-1">

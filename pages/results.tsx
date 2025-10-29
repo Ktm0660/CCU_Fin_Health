@@ -74,9 +74,9 @@ export default function Results() {
     "bg-violet-50 text-violet-700 border-violet-200";
 
   return (
-    <section>
+    <section className="motion-safe:animate-fade-in">
       {/* HERO SUMMARY */}
-      <div className="relative overflow-hidden rounded-3xl border shadow bg-gradient-to-b from-brand-50 via-white to-white p-6 md:p-10">
+      <div className="relative overflow-hidden rounded-3xl border shadow-soft bg-gradient-to-b from-brand-50 via-white to-white p-6 md:p-10">
         <div className="max-w-3xl">
           <h1 className="text-[28px] leading-tight md:text-4xl font-extrabold text-ink-900">
             {pcopy.icon[persona]} {pcopy.label[persona]}
@@ -117,13 +117,13 @@ export default function Results() {
           <div className="mt-6 flex flex-col sm:flex-row gap-3">
             <Link
               href={{ pathname: "/plan", query: { a: JSON.stringify(ans) } }}
-              className="inline-flex items-center justify-center rounded-xl bg-brand-500 px-5 py-3 text-white no-underline text-base"
+              className="inline-flex items-center justify-center rounded-xl bg-brand-500 px-5 py-3 text-white no-underline text-base shadow-soft hover:brightness-110 transition"
             >
               {L("Make my action path","Crear mi ruta de acción")}
             </Link>
             <Link
               href="/learn"
-              className="inline-flex items-center justify-center rounded-xl border px-5 py-3 no-underline text-ink-900 bg-white hover:bg-brand-50 text-base"
+              className="inline-flex items-center justify-center rounded-xl border px-5 py-3 no-underline text-ink-900 bg-white hover:bg-brand-50 text-base transition"
             >
               {L("Explore all lessons","Explorar todas las lecciones")}
             </Link>
@@ -154,7 +154,7 @@ export default function Results() {
 
       {/* Optional: back to assessment */}
       <div className="mt-8">
-        <Link href="/assessment" className="px-4 py-2 rounded-xl border no-underline">
+        <Link href="/assessment" className="px-4 py-2 rounded-xl border no-underline transition hover:bg-brand-50">
           {L("Retake the checkup","Repetir la evaluación")}
         </Link>
       </div>

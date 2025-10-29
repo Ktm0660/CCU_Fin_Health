@@ -49,7 +49,7 @@ export default function QuestionCard({ q, locale, onAnswer }: Props) {
 
   if (isSlider(q)) {
     return (
-      <div className="bg-white rounded-2xl shadow p-5 mb-3 md:mb-4">
+      <div className="bg-white rounded-2xl shadow-soft p-5 mb-4 md:mb-5 motion-safe:animate-slide-up">
         <p className="font-medium text-ink-900">{prompt}</p>
 
         {/* Left/Right labels only */}
@@ -80,14 +80,14 @@ export default function QuestionCard({ q, locale, onAnswer }: Props) {
 
   if (isChoice(q)) {
     return (
-      <div className="bg-white rounded-2xl shadow p-5 mb-3 md:mb-4">
+      <div className="bg-white rounded-2xl shadow-soft p-5 mb-4 md:mb-5 motion-safe:animate-slide-up">
         <p className="font-medium text-ink-900">{prompt}</p>
         <div className="mt-3 grid gap-2">
           {q.options.map((opt: AnyQ, i: number) => (
             <button
               key={i}
               onClick={() => onAnswer(i)}
-              className="text-left px-4 py-3 rounded-xl border hover:border-brand-400 hover:bg-brand-50 focus:outline-none focus:ring-2 focus:ring-brand-400"
+              className="text-left px-4 py-3 rounded-xl border hover:border-brand-300 hover:bg-brand-50 focus:outline-none focus:ring-2 focus:ring-brand-400 active:scale-[0.995] transition"
             >
               {locale === "en" ? (opt?.text_en ?? "") : (opt?.text_es ?? "")}
             </button>
