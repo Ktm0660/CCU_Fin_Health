@@ -22,8 +22,6 @@ export default function Assessment() {
   const [i, setI] = useState(0); // current question index (one-at-a-time)
 
   const q = questions[i];
-  const done = Object.keys(answers).length === questions.length;
-
   useEffect(() => { saveAnswers(answers); }, [answers]);
 
   function selectAnswer(idx:number) {
@@ -39,6 +37,29 @@ export default function Assessment() {
   }
 
   function goResults() {
+    // Fill any unanswered with neutral defaults on submit
+    const filled: AnswerMap = { ...answers };
+    questions.forEach((q) => {
+      if (filled[q.id] === undefined) {
+        if ((q as any).kind === "slider") {
+          // sliders are 0..4 buckets; middle is 2
+          filled[q.id] = 2 as any;
+        } else {
+          // choice: pick middle option or 0 if only two
+          const opts = (q as any).options || [];
+          const mid = opts.length >= 3 ? Math.floor(opts.length / 2) : 0;
+          filled[q.id] = mid;
+        }
+      }
+    });
+
+    // Persist answers for results page
+    try {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("ccu:lastAnswers", JSON.stringify(filled));
+      }
+    } catch {}
+
     push("/results");
   }
 
@@ -81,9 +102,9 @@ export default function Assessment() {
           </button>
         ) : (
           <button
+            id="see-results"
             onClick={goResults}
             className="px-4 py-2 rounded-lg bg-brand-500 text-white shadow-soft hover:brightness-110 active:scale-[0.99] transition"
-            disabled={!done}
           >
             {loc==="en" ? "See my results" : "Ver mis resultados"}
           </button>
