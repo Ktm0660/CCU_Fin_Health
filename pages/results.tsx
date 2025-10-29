@@ -1,210 +1,94 @@
-import { useRouter } from "next/router";
-import { useMemo } from "react";
-import Link from "next/link";
-import { scoreAnswers, bucketize5 } from "@/data/assessment";
-import { personaCopy, getPersona } from "@/data/personas";
-import { pickLessons, Area, Level } from "@/data/lessons";
-import LessonCard from "@/components/LessonCard";
-import { loadAnswers } from "@/lib/state";
+import { useEffect, useMemo, useState } from "react";
+import {
+  getRandomizedQuestions,
+  scoreAnswers,
+  normalize0to100,
+  type Pillar
+} from "@/data/assessment";
 
-export default function Results() {
-  const router = useRouter();
-  const locale = (router.locale as "en"|"es") || "en";
-  const L = (en: string, es: string) => (locale === "en" ? en : es);
-
-  const ans = useMemo(() => {
-    let parsed: any = null;
-    const q = router.query?.a as string | undefined;
-    if (q) {
-      try { parsed = JSON.parse(q); } catch {}
-    }
-    if (!parsed && typeof window !== "undefined") {
-      try { parsed = JSON.parse(localStorage.getItem("ccu:lastAnswers") || "{}"); } catch {}
-    }
-    if (!parsed) {
-      try { parsed = loadAnswers(); } catch {}
-    }
-    return parsed || {};
-  }, [router.query?.a]);
-
-  const s = scoreAnswers(ans);
-  const buckets = {
-    habits: bucketize5(s.habits, s.maxHabits),
-    confidence: bucketize5(s.confidence, s.maxConfidence),
-    stability: bucketize5(s.stability, s.maxStability),
-  };
-
-  // Persona + weakest area + starting level
-  const pcopy = personaCopy(locale);
-  const persona = getPersona(buckets);
-  const ranks: Record<string, number> = { rebuilding: 1, getting_started: 2, progress: 3, on_track: 4, empowered: 5 };
-  const ordered = [
-    { k: "stability", r: ranks[buckets.stability] },
-    { k: "habits",    r: ranks[buckets.habits] },
-    { k: "confidence",r: ranks[buckets.confidence] },
-  ].sort((a,b) => a.r - b.r);
-  const weakest = ordered[0].k as Area;
-
-  const personaLevelMap: Record<string, Level> = {
-    rebuilding: "discover",
-    getting_started: "stabilize",
-    progress: "grow",
-    on_track: "grow",
-    empowered: "thrive",
-  };
-  const startLevel = personaLevelMap[persona];
-
-  const recs = pickLessons(weakest, startLevel, locale, 3);
-
-  // Localized bucket labels
-  const BUCKET_LABELS_EN: Record<string,string> = {
-    rebuilding: "Rebuilding",
-    getting_started: "Getting Started",
-    progress: "Making Progress",
-    on_track: "On Track",
-    empowered: "Empowered",
-  };
-  const BUCKET_LABELS_ES: Record<string,string> = {
-    rebuilding: "Reconstruyendo",
-    getting_started: "Empezando",
-    progress: "Tomando ritmo",
-    on_track: "En buen camino",
-    empowered: "Con control",
-  };
-  const BL = locale === "en" ? BUCKET_LABELS_EN : BUCKET_LABELS_ES;
-
-  // UI helpers
-  const chipColor = (b: string) =>
-    b === "rebuilding" ? "bg-rose-50 text-rose-700 border-rose-200" :
-    b === "getting_started" ? "bg-amber-50 text-amber-700 border-amber-200" :
-    b === "progress" ? "bg-sky-50 text-sky-700 border-sky-200" :
-    b === "on_track" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
-    "bg-violet-50 text-violet-700 border-violet-200";
-
+function Stat({ label, value, max }: { label: string; value: number; max: number }) {
+  const pct = Math.round((value / Math.max(1, max)) * 100);
   return (
-    <section className="motion-safe:animate-fade-in">
-      <div className="flex flex-wrap items-end gap-3 mb-6">
-        <h1 className="text-2xl md:text-3xl font-semibold text-ink-900 mb-2 accent-underline">
-          {locale==="en" ? "Your Financial Health Results" : "Tus resultados de salud financiera"}
-        </h1>
-        <span
-          className="inline-flex items-center px-2 py-1 rounded-full text-xs"
-          style={{ background: "rgba(11,20,67,0.06)", color: "var(--ccu-blue)" }}
-        >
-          {L("Updated", "Actualizado")}
-        </span>
+    <div className="bg-white rounded-2xl shadow p-4 border">
+      <div className="flex items-baseline justify-between">
+        <h3 className="font-semibold text-ink-900">{label}</h3>
+        <span className="text-sm text-slate-600">{value} / {max} ({pct}%)</span>
       </div>
-      {/* HERO SUMMARY */}
-      <div className="relative overflow-hidden rounded-3xl border shadow-soft bg-gradient-to-b from-brand-50 via-white to-white p-6 md:p-10">
-        <div className="max-w-3xl">
-          <div className="flex flex-wrap items-center gap-3">
-            <h2 className="text-[28px] leading-tight md:text-4xl font-extrabold text-ink-900">
-              {pcopy.icon[persona]} {pcopy.label[persona]}
-            </h2>
-            <span
-              className="inline-flex items-center px-3 py-1.5 rounded-full text-xs md:text-sm"
-              style={{ background: "rgba(11,20,67,0.06)", color: "var(--ccu-blue)" }}
-            >
-              {L("Overall snapshot", "Panorama general")}
-            </span>
-          </div>
-          <p className="mt-3 text-[16px] md:text-lg text-slate-800">
-            {pcopy.summary[persona]}
-          </p>
-          <p className="mt-2 text-[15px] md:text-base text-slate-700">
-            {L(
-              "Here’s a clear snapshot of where you shine and where tiny changes can unlock big relief.",
-              "Aquí tienes un panorama claro: en qué destacas y dónde pequeños cambios traen gran alivio."
-            )}
-          </p>
-
-          {/* Dimension chips */}
-          <div className="mt-5 flex flex-wrap gap-2">
-            <DimChip
-              label={L("Habits","Hábitos")}
-              bucket={buckets.habits}
-              blabel={BL[buckets.habits]}
-              chipColor={chipColor(buckets.habits)}
-            />
-            <DimChip
-              label={L("Confidence","Confianza")}
-              bucket={buckets.confidence}
-              blabel={BL[buckets.confidence]}
-              chipColor={chipColor(buckets.confidence)}
-            />
-            <DimChip
-              label={L("Stability","Estabilidad")}
-              bucket={buckets.stability}
-              blabel={BL[buckets.stability]}
-              chipColor={chipColor(buckets.stability)}
-            />
-          </div>
-
-          {/* Primary CTA */}
-          <div className="mt-6 flex flex-col sm:flex-row gap-3">
-            <Link
-              href={{ pathname: "/plan", query: { a: JSON.stringify(ans) } }}
-              className="inline-flex items-center justify-center rounded-xl bg-brand-500 px-5 py-3 text-white no-underline text-base shadow-soft hover:brightness-110 transition"
-            >
-              {L("Make my action path","Crear mi ruta de acción")}
-            </Link>
-            <Link
-              href="/learn"
-              className="inline-flex items-center justify-center rounded-xl border px-5 py-3 no-underline text-ink-900 bg-white hover:bg-brand-50 text-base transition"
-            >
-              {L("Explore all lessons","Explorar todas las lecciones")}
-            </Link>
-          </div>
-
-          <p className="mt-3 text-xs text-slate-600">
-            {L("Private and judgment-free · You can do this, one small step at a time.",
-               "Privado y sin juicios · Puedes lograrlo, paso a paso.")}
-          </p>
-        </div>
+      <div className="mt-2 h-2 rounded-full bg-slate-200">
+        <div className="h-2 rounded-full bg-brand-500" style={{ width: `${pct}%` }} />
       </div>
-
-      {/* RECOMMENDED LESSONS */}
-      <h2 className="text-xl md:text-2xl font-semibold text-ink-900 mt-8 mb-3">
-        {L("Recommended for you","Recomendado para ti")}
-      </h2>
-      <p className="text-sm text-slate-700 mb-3">
-        {L(
-          "Start with these short lessons matched to your current needs.",
-          "Empieza con estas lecciones breves según tus necesidades."
-        )}
-      </p>
-      <div className="grid md:grid-cols-3 gap-4">
-        {recs.map(lsn => (
-          <LessonCard key={lsn.id} lesson={lsn} locale={locale} />
-        ))}
-      </div>
-
-      {/* Optional: back to assessment */}
-      <div className="mt-8">
-        <Link href="/assessment" className="px-4 py-2 rounded-xl border no-underline transition hover:bg-brand-50">
-          {L("Retake the checkup","Repetir la evaluación")}
-        </Link>
-      </div>
-    </section>
+    </div>
   );
 }
 
-function DimChip({
-  label,
-  bucket,
-  blabel,
-  chipColor,
-}: {
-  label: string;
-  bucket: string;
-  blabel: string;
-  chipColor: string;
-}) {
+export default function Results() {
+  const [payload, setPayload] = useState<{ order: any[]; answers: Record<string, number> } | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("ccu_assessment_payload");
+      if (raw) setPayload(JSON.parse(raw));
+    } catch {}
+  }, []);
+
+  const randomized = useMemo(() => {
+    // We can't reconstruct the exact question/option order perfectly here without heavier persistence;
+    // results use ids and weights, so order doesn't matter for scoring.
+    return getRandomizedQuestions();
+  }, []);
+
+  const s = useMemo(() => {
+    if (!payload) {
+      return scoreAnswers(randomized, {}); // empty state
+    }
+    return scoreAnswers(randomized, payload.answers);
+  }, [payload, randomized]);
+
+  const labels: Record<Pillar, string> = {
+    habits: "Habits",
+    confidence: "Confidence",
+    stability: "Stability",
+    trust: "Trust & Access",
+    resilience: "Resilience"
+  };
+
+  const overallPct = normalize0to100(s.total, s.totalMax);
+
   return (
-    <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm ${chipColor}`}>
-      <strong className="text-ink-900/80">{label}</strong>
-      <span aria-hidden>•</span>
-      <span>{blabel}</span>
-    </span>
+    <section>
+      <div className="bg-brand-50 border rounded-2xl p-5 mb-5">
+        <h1 className="text-2xl font-semibold text-ink-900">Your Financial Health Snapshot</h1>
+        <p className="mt-2 text-slate-700">
+          This is a friendly snapshot of where you’re strong and where small changes could help most.
+        </p>
+        <div className="mt-4">
+          <div className="flex items-center justify-between">
+            <span className="font-medium">Overall</span>
+            <span className="text-sm text-slate-700">{s.total} / {s.totalMax} ({overallPct}%)</span>
+          </div>
+          <div className="mt-2 h-3 rounded-full bg-slate-200">
+            <div className="h-3 rounded-full bg-brand-600" style={{ width: `${overallPct}%` }} />
+          </div>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {(Object.keys(labels) as Pillar[]).map(p => (
+          <Stat key={p} label={labels[p]} value={s.byPillar[p]} max={s.maxByPillar[p]} />
+        ))}
+      </div>
+
+      <div className="bg-white rounded-2xl shadow p-5 border mt-6">
+        <h2 className="text-xl font-semibold text-ink-900">What to do next</h2>
+        <p className="text-slate-700 mt-2">
+          Pick one area below and take a small step this week. We’ll soon tailor lessons, tools, and products to your pattern.
+        </p>
+        <ul className="list-disc ml-6 space-y-2 mt-3">
+          <li>Start a tiny emergency buffer ($50–$200) by auto-moving money on payday.</li>
+          <li>Schedule bills and minimums; choose one “pay-down day” monthly.</li>
+          <li>Use a simple spending list: needs first, then goals, then wants.</li>
+        </ul>
+      </div>
+    </section>
   );
 }
