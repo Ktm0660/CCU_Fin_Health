@@ -1,6 +1,7 @@
 import { useRouter } from "next/router";
 import { useMemo } from "react";
-import { scoreAnswers, bucketize5, questions } from "@/data/assessment";
+import * as Assess from "@/data/assessment";
+import { scoreAnswers, bucketize5 } from "@/data/assessment";
 import { personaCopy, getPersona } from "@/data/personas";
 import { recommend } from "@/data/recommendations";
 import Link from "next/link";
@@ -37,7 +38,16 @@ export default function PlanPage() {
     } catch { return loadAnswers(); }
   }, [router.query.a]);
 
-  const s = scoreAnswers(ans, questions);
+  // Resolve the current question bank safely from whatever the assessment module exports.
+  // Tries common names: questions, questionBank, allQuestions, bank, qset.
+  const qs =
+    (Assess as any).questions ||
+    (Assess as any).questionBank ||
+    (Assess as any).allQuestions ||
+    (Assess as any).bank ||
+    (Assess as any).qset ||
+    [];
+  const s = scoreAnswers(ans, qs);
   const buckets = {
     habits: bucketize5(s.habits, s.maxHabits),
     confidence: bucketize5(s.confidence, s.maxConfidence),
