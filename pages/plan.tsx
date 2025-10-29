@@ -48,11 +48,22 @@ export default function PlanPage() {
     (Assess as any).qset ||
     [];
   const s = scoreAnswers(ans, qs);
-  const buckets = {
-    habits: bucketize5(s.habits, s.maxHabits),
-    confidence: bucketize5(s.confidence, s.maxConfidence),
-    stability: bucketize5(s.stability, s.maxStability),
+  // Pillar-agnostic bucketing: find all score fields that are not totals and not max*.
+  const pillarKeys = Object.keys(s).filter(
+    (k) => k !== "total" && k !== "totalMax" && !k.startsWith("max")
+  );
+  // Helper to resolve corresponding max key in either "maxXxx" or "max_xxx" form
+  const maxFor = (k: string) => {
+    const pascal = "max" + k.charAt(0).toUpperCase() + k.slice(1);
+    const snake = "max_" + k;
+    return (s as any)[pascal] ?? (s as any)[snake] ?? 0;
   };
+  const buckets: Record<string, ReturnType<typeof bucketize5>> = {};
+  for (const k of pillarKeys) {
+    const val = (s as any)[k] ?? 0;
+    const max = maxFor(k);
+    buckets[k] = bucketize5(val, max);
+  }
 
   // Persona engine
   const pcopy = personaCopy(locale);
