@@ -71,9 +71,17 @@ export default function PlanPage() {
   }
 
   // Persona engine
-  const pcopy = personaCopy(locale);
+  type Locale = "en" | "es";
+  const pick = <T,>(loc: Locale, v: { en: T; es: T }) => v[loc];
+
   const persona = getPersona(buckets);
-  const personaTitle = `${pcopy.icon[persona]} ${pcopy.label[persona]}`;
+  const P = personaCopy[persona];
+
+  const personaTitle = pick(locale as Locale, P.title);
+  const personaSubtitle = pick(locale as Locale, P.subtitle);
+  const personaAbout = pick(locale as Locale, P.about);
+  const personaFocus = pick(locale as Locale, P.focus);
+  const personaPlan = pick(locale as Locale, P.plan30day);
 
   const rank: Record<Bucket, number> = {
     rebuilding: 1,
@@ -122,31 +130,40 @@ export default function PlanPage() {
       {/* Persona header */}
       <div className="bg-white rounded-2xl shadow p-4 border mb-5">
         <h2 className="text-xl font-semibold text-ink-900">{personaTitle}</h2>
-        <p className="text-sm mt-1">{pcopy.summary[persona]}</p>
+        <p className="text-sm mt-1">{personaSubtitle}</p>
       </div>
 
-      {/* Persona-driven steps */}
-      <div className="grid md:grid-cols-2 gap-4">
-        <Card title={L("Start here (quick wins)", "Empieza aquí (logros rápidos)")}>
-          <ul className="list-disc ml-5 space-y-1">
-            {pcopy.steps[persona].slice(0, 3).map((s, i) => <li key={i}>{s}</li>)}
-          </ul>
-        </Card>
-
-        <Card title={areaTitle(locale, primary, buckets[primary] as Bucket)}>
-          {stepsByArea(locale, primary, buckets[primary] as Bucket)}
-        </Card>
+      <div className="mt-4 bg-white rounded-2xl border p-4 shadow-sm">
+        <h2 className="font-semibold">{L("About you", "Sobre ti")}</h2>
+        <p className="mt-2 text-slate-800">{personaAbout}</p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-4 mt-4">
-        <Card title={areaTitle(locale, secondary, buckets[secondary] as Bucket)}>
-          {stepsByArea(locale, secondary, buckets[secondary] as Bucket)}
+        <Card title={L("What to focus on next", "En qué enfocarte ahora")}>
+          <ul className="list-disc ml-5 space-y-1">
+            {personaFocus.map((line, i) => (
+              <li key={i}>{line}</li>
+            ))}
+          </ul>
         </Card>
 
-        <Card title={L("Keep going", "Sigue creciendo")}>
+        <Card title={L("30-day starter plan", "Plan inicial de 30 días")}>
           <ul className="list-disc ml-5 space-y-1">
-            {pcopy.steps[persona].slice(3, 6).map((s, i) => <li key={i}>{s}</li>)}
+            {personaPlan.map((line, i) => (
+              <li key={i}>{line}</li>
+            ))}
           </ul>
+        </Card>
+      </div>
+
+      {/* Persona-driven steps */}
+      <div className="grid md:grid-cols-2 gap-4 mt-4">
+        <Card title={areaTitle(locale, primary, buckets[primary] as Bucket)}>
+          {stepsByArea(locale, primary, buckets[primary] as Bucket)}
+        </Card>
+
+        <Card title={areaTitle(locale, secondary, buckets[secondary] as Bucket)}>
+          {stepsByArea(locale, secondary, buckets[secondary] as Bucket)}
         </Card>
       </div>
 
