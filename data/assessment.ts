@@ -367,3 +367,9 @@ export function bucketize5(pct: number): BucketKey5 {
   if (pct >= 20) return "vulnerable";
   return "at_risk";
 }
+
+// ---------- Legacy compatibility aliases (for older modules) ----------
+export type Bucket5 = BucketKey5;        // matches `import type { Bucket5 } from "./assessment"`
+export type BucketKey = BucketKey5;      // in case something imported BucketKey
+export const bucketize = bucketize5;     // in case something imported bucketize
+// ---------------------------------------------------------------------
