@@ -1,18 +1,12 @@
 import { useRouter } from "next/router";
 import { useMemo } from "react";
 
-import {
-  scoreAnswers,
-  questionsBase,
-  bucketize5,
-  type BucketKey5,
-} from "@/data/assessment";
-
-import { personaCopy, getPersona } from "@/data/personas";
-import { recommend, type BucketsArg, type Locale } from "@/data/recommendations";
+import { scoreAnswers } from "@/data/assessment";
+import { questionsBase, bucketize5, type BucketKey5 } from "@/data/assessment";
 import { pickLessons, Area, Level } from "@/data/lessons";
+import { personaCopy, getPersona, type PersonaKey } from "@/data/personas";
+import { recommend, type Locale } from "@/data/recommendations";
 import LessonCard from "@/components/LessonCard";
-import type { PersonaKey } from "@/data/personas";
 import Link from "next/link";
 import { t } from "@/lib/i18n";
 import { loadAnswers } from "@/lib/state";
@@ -22,11 +16,11 @@ const pick = <T,>(loc: Locale, v: Localized<T>): T => v[loc];
 type Score = ReturnType<typeof scoreAnswers>;
 
 const bucketRank: Record<BucketKey5, number> = {
-  building: 0,
-  getting_started: 1,
+  getting_started: 0,
+  building: 1,
   progress: 2,
   on_track: 3,
-  empowered: 4
+  empowered: 4,
 };
 
 type Bucket = BucketKey5;
@@ -67,49 +61,46 @@ export default function PlanPage() {
 
   const locale = ((router.query.lang as string) || "en") as Locale;
 
-  const s = {
-    habits: score.byPillar.habits ?? 0,
-    maxHabits: score.maxByPillar.habits ?? 0,
-    confidence: score.byPillar.confidence ?? 0,
-    maxConfidence: score.maxByPillar.confidence ?? 0,
-    stability: score.byPillar.stability ?? 0,
-    maxStability: score.maxByPillar.stability ?? 0,
-    access: score.byPillar.trust ?? 0,
-    maxAccess: score.maxByPillar.trust ?? 0,
-    resilience: score.byPillar.resilience ?? 0,
-    maxResilience: score.maxByPillar.resilience ?? 0,
-  };
-
-  // Helper: derive pillar maxes from scoreAnswers output or use safe defaults.
-  const getMax = (k: "habits" | "confidence" | "stability" | "access" | "resilience") => {
-    const map: Record<typeof k, number | undefined> = {
-      habits: (s as any).maxHabits,
-      confidence: (s as any).maxConfidence,
-      stability: (s as any).maxStability,
-      access: (s as any).maxAccess,
-      resilience: (s as any).maxResilience,
-    };
-    // Fallback default if not provided by scoreAnswers
-    return typeof map[k] === "number" ? (map[k] as number) : 100;
+  const ratio = (value: unknown, max: unknown) => {
+    const v = typeof value === "number" ? value : 0;
+    const m = typeof max === "number" ? max : 0;
+    return m > 0 ? v / m : 0;
   };
 
   // Build 5-pillar buckets for persona + recommendations.
-  const buckets: BucketsArg = (() => {
-    const hVal = typeof (s as any).habits === "number" ? (s as any).habits : 0;
-    const cVal = typeof (s as any).confidence === "number" ? (s as any).confidence : 0;
-    const stVal = typeof (s as any).stability === "number" ? (s as any).stability : 0;
-    const aVal = typeof (s as any).access === "number" ? (s as any).access : 0;
+  const buckets = (() => {
+    const accessValue = (score.byPillar as Record<string, number | undefined>).access ?? score.byPillar.trust;
+    const accessMax = (score.maxByPillar as Record<string, number | undefined>).access ?? score.maxByPillar.trust;
 
-    // If resilience isn't wired in scoring yet, mirror stability for now so types and UX work.
-    const rVal = typeof (s as any).resilience === "number" ? (s as any).resilience : stVal;
+    const hVal = ratio(score.byPillar.habits, score.maxByPillar.habits);
+    const cVal = ratio(score.byPillar.confidence, score.maxByPillar.confidence);
+    const stVal = ratio(score.byPillar.stability, score.maxByPillar.stability);
+    const aVal = ratio(accessValue, accessMax);
 
-    const habits = bucketize5(hVal, getMax("habits"));
-    const confidence = bucketize5(cVal, getMax("confidence"));
-    const stability = bucketize5(stVal, getMax("stability"));
-    const access = bucketize5(aVal, getMax("access"));
-    const resilience = bucketize5(rVal, getMax("resilience"));
+    const resilienceHasData =
+      typeof score.maxByPillar.resilience === "number" && score.maxByPillar.resilience > 0;
+    const rVal = resilienceHasData
+      ? ratio(score.byPillar.resilience, score.maxByPillar.resilience)
+      : stVal;
 
-    return { habits, confidence, stability, access, resilience };
+    const habits = bucketize5(typeof hVal === "number" ? hVal : 0);
+    const confidence = bucketize5(typeof cVal === "number" ? cVal : 0);
+    const stability = bucketize5(typeof stVal === "number" ? stVal : 0);
+    const access = bucketize5(typeof aVal === "number" ? aVal : 0);
+    const resilience = bucketize5(typeof rVal === "number" ? rVal : 0);
+
+    const buckets: Record<
+      "habits" | "confidence" | "stability" | "access" | "resilience",
+      BucketKey5
+    > = {
+      habits,
+      confidence,
+      stability,
+      access,
+      resilience,
+    };
+
+    return buckets;
   })();
 
   // Persona engine
@@ -131,17 +122,27 @@ export default function PlanPage() {
   // Map persona to a starting lesson level
   const personaLevelMap: Record<PersonaKey, Level> = {
     rebuilder: "discover",
-    getting_started: "stabilize",
-    progress: "grow",
-    on_track: "grow",
-    empowered: "thrive",
+    starter: "stabilize",
+    steadier: "grow",
+    planner: "grow",
+    navigator: "thrive",
   };
   const startLevel = personaLevelMap[persona];
 
   // Pick lessons for primary focus area
   const recLessons = pickLessons(primary as Area, startLevel, locale, 3);
 
-  const recs = recommend(buckets, locale, { limit: 6 });
+  const recs = recommend(
+    {
+      habits: buckets.habits,
+      confidence: buckets.confidence,
+      stability: buckets.stability,
+      access: buckets.access,
+      resilience: buckets.resilience,
+    },
+    locale,
+    { limit: 6 }
+  );
 
   const L = (en: string, es: string) => (locale === "en" ? en : es);
 
