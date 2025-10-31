@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import * as Assess from "@/data/assessment";
 import type { BucketKey5 } from "@/data/assessment";
 import { scoreAnswers, bucketize5, rankOrder5 } from "@/data/assessment";
+import type { PersonaKey } from "@/data/personas";
 import { personaCopy, getPersona } from "@/data/personas";
 import { recommend } from "@/data/recommendations";
 import Link from "next/link";
@@ -75,14 +76,14 @@ export default function PlanPage() {
     "empowered" // start high, then minimize
   );
 
-  const persona = getPersona(overall);
+  const persona: PersonaKey = getPersona(overall);
   const P = personaCopy[persona];
 
   const personaTitle = pick(locale as Locale, P.title);
   const personaSubtitle = pick(locale as Locale, P.subtitle);
   const personaAbout = pick(locale as Locale, P.about);
   const personaFocus = pick(locale as Locale, P.focus);
-  const personaPlan  = pick(locale as Locale, P.plan30day);
+  const personaPlan = pick(locale as Locale, P.plan30day);
 
   // Determine primary/secondary focus by lowest-ranked dimension
   const order = [
@@ -94,8 +95,8 @@ export default function PlanPage() {
   const secondary = order[1].key as "habits" | "confidence" | "stability";
 
   // Map persona to a starting lesson level
-  const personaLevelMap: Record<BucketKey5, Level> = {
-    building: "discover",
+  const personaLevelMap: Record<PersonaKey, Level> = {
+    rebuilder: "discover",
     getting_started: "stabilize",
     progress: "grow",
     on_track: "grow",
