@@ -2,11 +2,15 @@ import type { Bucket5 } from "./assessment";
 
 export type BucketKey5 = Bucket5;
 
-export type PersonaKey =
-  | "rebuilder"
-  | "stabilizer"
-  | "builder"
-  | "optimizer";
+export const PERSONA_KEYS = [
+  "rebuilder",
+  "getting_started",
+  "progress",
+  "on_track",
+  "empowered",
+] as const;
+
+export type PersonaKey = typeof PERSONA_KEYS[number];
 
 export type Localized<T> = { en: T; es: T };
 const L = <T extends string | string[]>(en: T, es: T): Localized<T> => ({ en, es });
@@ -16,23 +20,17 @@ export function getPersona(bucket: BucketKey5): PersonaKey {
     case "building":
       return "rebuilder";
     case "getting_started":
-      return "stabilizer";
+      return "getting_started";
     case "progress":
-      return "builder";
+      return "progress";
     case "on_track":
+      return "on_track";
     case "empowered":
-      return "optimizer";
+      return "empowered";
     default:
       return "rebuilder";
   }
 }
-
-export const personaLabels: Record<PersonaKey, Localized<string>> = {
-  rebuilder: L("Rebuilder", "Reconstruyendo"),
-  stabilizer: L("Stabilizer", "Estabilizando"),
-  builder: L("Builder", "Construyendo"),
-  optimizer: L("Optimizer", "Optimizando"),
-};
 
 export const personaCopy: Record<
   PersonaKey,
@@ -41,11 +39,11 @@ export const personaCopy: Record<
     subtitle: Localized<string>;
     about: Localized<string>;
     focus: Localized<string[]>;
-    plan30day: Localized<string[]>; // ✅ renamed field
+    plan30day: Localized<string[]>;
   }
 > = {
   rebuilder: {
-    title: personaLabels.rebuilder,
+    title: L("Rebuilder", "Reconstruyendo"),
     subtitle: L(
       "Small, fast wins to lower stress and regain control.",
       "Pequeñas victorias rápidas para bajar el estrés y recuperar el control."
@@ -80,8 +78,8 @@ export const personaCopy: Record<
     ),
   },
 
-  stabilizer: {
-    title: personaLabels.stabilizer,
+  getting_started: {
+    title: L("Stabilizer", "Estabilizando"),
     subtitle: L(
       "Build rhythm and reduce surprises.",
       "Crea ritmo y reduce sorpresas."
@@ -116,8 +114,8 @@ export const personaCopy: Record<
     ),
   },
 
-  builder: {
-    title: personaLabels.builder,
+  progress: {
+    title: L("Builder", "Construyendo"),
     subtitle: L(
       "Lock in habits and accelerate progress.",
       "Consolida hábitos y acelera el progreso."
@@ -152,8 +150,44 @@ export const personaCopy: Record<
     ),
   },
 
-  optimizer: {
-    title: personaLabels.optimizer,
+  on_track: {
+    title: L("Optimizer", "Optimizando"),
+    subtitle: L(
+      "Reinforce routines and keep buffers growing.",
+      "Refuerza rutinas y sigue creciendo los colchones."
+    ),
+    about: L(
+      "You’re on a steady track. We’ll reinforce habits, grow emergency savings, and plan around upcoming milestones.",
+      "Vas en buen camino. Reforzaremos hábitos, creceremos el ahorro de emergencia y planificaremos los próximos hitos."
+    ),
+    focus: L(
+      [
+        "Keep building toward 3 months of essentials.",
+        "Tune cash flow—automate key bills and savings.",
+        "Plan for near-term goals (car, medical, holidays).",
+      ],
+      [
+        "Sigue avanzando hacia 3 meses de esenciales.",
+        "Ajusta el flujo: automatiza pagos y ahorros clave.",
+        "Planea metas cercanas (auto, médico, festividades).",
+      ]
+    ),
+    plan30day: L(
+      [
+        "Raise your auto-transfer by a small amount.",
+        "Schedule a monthly money hour to review goals.",
+        "List major expenses due in the next 6 months.",
+      ],
+      [
+        "Aumenta tu transferencia automática un poco.",
+        "Programa una hora mensual para revisar metas.",
+        "Lista gastos grandes de los próximos 6 meses.",
+      ]
+    ),
+  },
+
+  empowered: {
+    title: L("Optimizer", "Optimizando"),
     subtitle: L(
       "Protect and optimize for the next 6–12 months.",
       "Protege y optimiza para los próximos 6–12 meses."
