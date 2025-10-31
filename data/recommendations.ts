@@ -1,7 +1,8 @@
 /**
  * Bilingual, pillar-aware catalog + ranker.
  * Exports:
- *   - recommend(buckets, locale, opts?)
+ *   - recommend(buckets, locale, opts?) : RecLocalized[]
+ *   - catalog
  * Types:
  *   - BucketKey5 (same keys as elsewhere)
  */
@@ -28,6 +29,12 @@ export type RecItem = {
 };
 
 export type BucketsArg = Record<Pillar, BucketKey5>;
+
+// Return type with localized strings
+export type RecLocalized = Omit<RecItem, "title" | "blurb"> & {
+  title: string;
+  blurb: string;
+};
 
 // Lower number = weaker → higher priority
 const rankOrder: Record<BucketKey5, number> = {
@@ -193,28 +200,9 @@ export function recommend(
   buckets: BucketsArg,
   locale: Locale,
   opts?: { limit?: number; includeDims?: Pillar[] }
-);
-export function recommend(
-  legacyBuckets: Partial<Record<string, BucketKey5>>,
-  legacyFocus: string[],
-  legacyLimit?: number
-);
-export function recommend(
-  bucketsOrLegacy: BucketsArg | Partial<Record<string, BucketKey5>>,
-  localeOrLegacy: Locale | string[],
-  opts?: { limit?: number; includeDims?: Pillar[] } | number
-) {
-  if (Array.isArray(localeOrLegacy)) {
-    const limit = typeof opts === "number" ? opts : undefined;
-    const locale: Locale = "en";
-    const buckets = toModernBuckets(bucketsOrLegacy as Partial<Record<string, BucketKey5>>);
-    return recommend(buckets, locale, { limit });
-  }
-
+): RecLocalized[] {
   const limit = opts?.limit ?? 6;
   const includeDims = opts?.includeDims;
-  const locale = localeOrLegacy;
-  const buckets = bucketsOrLegacy as BucketsArg;
 
   const pool = includeDims?.length
     ? catalog.filter((c) => c.dims.some((d) => includeDims.includes(d)))
@@ -222,23 +210,24 @@ export function recommend(
 
   const ranked = sortByImpact(buckets, pool);
 
-  // Blend: top 3 from the weakest pillar, then fill with variety.
+  // Order pillars by weakness (lowest bucket rank first)
   const pillarsByWeakness = (["habits", "confidence", "stability", "access", "resilience"] as Pillar[])
     .sort((a, b) => priorityFor(a, buckets) - priorityFor(b, buckets));
 
   const out: RecItem[] = [];
+
+  // Take up to 3 from each pillar starting with weakest, then fill
   for (const p of pillarsByWeakness) {
     for (const item of ranked) {
       if (out.length >= limit) break;
       if (item.dims.includes(p) && !out.find((x) => x.id === item.id)) {
         out.push(item);
-        if (out.filter((x) => x.dims.includes(p)).length >= 3) break; // cap per-pillar early
+        if (out.filter((x) => x.dims.includes(p)).length >= 3) break;
       }
     }
     if (out.length >= limit) break;
   }
 
-  // Fill remaining slots with diverse support
   if (out.length < limit) {
     for (const item of ranked) {
       if (out.length >= limit) break;
@@ -246,23 +235,14 @@ export function recommend(
     }
   }
 
-  // Localize title/blurb on the way out
-  return out.map((r) => ({
+  // Localize on return
+  const localized: RecLocalized[] = out.map((r) => ({
     ...r,
     title: r.title[locale] ?? r.title.en,
     blurb: r.blurb[locale] ?? r.blurb.en,
   }));
-}
 
-function toModernBuckets(input: Partial<Record<string, BucketKey5>>): BucketsArg {
-  const fallback: BucketKey5 = "progress";
-  return {
-    habits: input.habits ?? fallback,
-    confidence: input.confidence ?? fallback,
-    stability: input.stability ?? fallback,
-    access: input.access ?? fallback,
-    resilience: input.resilience ?? input.knowledge ?? fallback,
-  };
+  return localized;
 }
 
 export type RecCatalog = typeof catalog;
