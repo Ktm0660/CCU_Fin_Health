@@ -5,6 +5,7 @@ import {
   AnswerMap
 } from "@/data/assessment";
 import QuestionCard from "@/components/QuestionCard";
+import { detectLocale } from "@/lib/locale";
 
 function Bar({ value, max }: { value: number; max: number }) {
   const pct = Math.max(0, Math.min(100, Math.round((value / Math.max(1, max)) * 100)));
@@ -16,8 +17,8 @@ function Bar({ value, max }: { value: number; max: number }) {
 }
 
 export default function Assessment() {
-  const { locale, push } = useRouter();
-  const loc = (locale as "en" | "es") || "en";
+  const router = useRouter();
+  const locale = detectLocale(router.asPath, router.locale);
 
   // Freeze randomized questions for this session render
   const randomized = useMemo(() => getRandomizedQuestions(), []);
@@ -50,7 +51,7 @@ export default function Assessment() {
     try {
       localStorage.setItem("ccu_assessment_payload", JSON.stringify(payload));
     } catch {}
-    push("/results");
+    router.push("/results");
   }
 
   const selectedIndex = q ? (answers[q.id] as number | undefined) : undefined;
@@ -58,14 +59,14 @@ export default function Assessment() {
   return (
     <section>
       <h1 className="text-2xl font-semibold text-ink-900 mb-2">
-        {loc === "en"
+        {locale === "en"
           ? "Connections Financial Health & Trust Assessment"
           : "Evaluación de Salud Financiera y Confianza"}
       </h1>
 
       {/* Progress header */}
       <div className="mb-4 flex items-center justify-between text-sm text-slate-700">
-        <span>{loc === "en" ? "Progress" : "Progreso"}: {i + 1} / {total}</span>
+        <span>{locale === "en" ? "Progress" : "Progreso"}: {i + 1} / {total}</span>
         <div className="w-1/2">
           <Bar value={i + 1} max={total} />
         </div>
@@ -75,7 +76,7 @@ export default function Assessment() {
       {q && (
         <QuestionCard
           q={q}
-          locale={loc as "en" | "es"}
+          locale={locale}
           selectedIndex={selectedIndex}
           onAnswer={selectAnswer}
         />
@@ -88,7 +89,7 @@ export default function Assessment() {
           disabled={i === 0}
           className="px-4 py-2 rounded-xl border disabled:opacity-50"
         >
-          {loc === "en" ? "Back" : "Atrás"}
+          {locale === "en" ? "Back" : "Atrás"}
         </button>
 
         {i < total - 1 ? (
@@ -100,7 +101,7 @@ export default function Assessment() {
             className="px-4 py-2 rounded-xl bg-brand-500 text-white disabled:bg-slate-300"
             disabled={selectedIndex === undefined}
           >
-            {loc === "en" ? "Next" : "Siguiente"}
+            {locale === "en" ? "Next" : "Siguiente"}
           </button>
         ) : (
           <button
@@ -108,14 +109,14 @@ export default function Assessment() {
             className="px-4 py-2 rounded-xl bg-brand-600 text-white"
             disabled={!done}
           >
-            {loc === "en" ? "See my results" : "Ver mis resultados"}
+            {locale === "en" ? "See my results" : "Ver mis resultados"}
           </button>
         )}
       </div>
 
       {/* Friendly nudge */}
       <p className="text-xs text-slate-600 mt-3">
-        {loc === "en"
+        {locale === "en"
           ? "No judgment—this is just a quick snapshot to guide next steps."
           : "Sin juicios—esto es una guía rápida para los próximos pasos."}
       </p>

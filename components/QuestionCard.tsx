@@ -1,10 +1,11 @@
 import { Question } from "@/data/assessment";
+import { translateOptionLabel, type Locale } from "@/lib/locale";
 
 export default function QuestionCard({
   q, locale, selectedIndex, onAnswer
 }: {
   q: Question;
-  locale: "en" | "es";
+  locale: Locale;
   selectedIndex: number | undefined;
   onAnswer: (idx: number) => void;
 }) {
@@ -17,6 +18,8 @@ export default function QuestionCard({
       <div className="mt-3 grid gap-2">
         {q.options.map((opt, i) => {
           const active = selectedIndex === i;
+          const baseLabel = t(opt.text_en, opt.text_es);
+          const label = translateOptionLabel(baseLabel, locale);
           return (
             <button
               key={i}
@@ -28,7 +31,7 @@ export default function QuestionCard({
               ].join(" ")}
               aria-pressed={active}
             >
-              {t(opt.text_en, opt.text_es)}
+              {label}
             </button>
           );
         })}
