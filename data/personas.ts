@@ -1,262 +1,144 @@
-import type { Bucket5 } from "./assessment";
+/**
+ * Friendly personas (bilingual) with non-judgmental tone.
+ * Exports:
+ *   - getPersona(buckets)
+ *   - personaCopy (localized content by persona key)
+ */
+import type { BucketKey5 } from "./assessment";
 
-export type BucketKey5 = Bucket5;
+export type Locale = "en" | "es";
+export type Pillar = "habits" | "confidence" | "stability" | "access" | "resilience";
 
-export const PERSONA_KEYS = [
-  "rebuilder",
-  "getting_started",
-  "progress",
-  "on_track",
-  "empowered",
-] as const;
+export type PersonaKey = "rebuilder" | "starter" | "steadier" | "planner" | "navigator";
 
-export type PersonaKey = typeof PERSONA_KEYS[number];
+export type BucketsArg = Record<Pillar, BucketKey5>;
 
-export type Localized<T> = { en: T; es: T };
-const L = <T extends string | string[]>(en: T, es: T): Localized<T> => ({ en, es });
-
-type PersonaBuckets = {
-  habits: BucketKey5;
-  confidence: BucketKey5;
-  stability: BucketKey5;
-  access?: BucketKey5;
-  knowledge?: BucketKey5;
+const rankOrder: Record<BucketKey5, number> = {
+  building: 1,
+  getting_started: 2,
+  progress: 3,
+  on_track: 4,
+  empowered: 5,
 };
 
-type PersonaInput = BucketKey5 | PersonaBuckets;
-
-const personaBucketRank: Record<BucketKey5, number> = {
-  building: 0,
-  getting_started: 1,
-  progress: 2,
-  on_track: 3,
-  empowered: 4,
-};
-
-function resolvePersonaBucket(input: PersonaInput): BucketKey5 {
-  if (typeof input === "string") {
-    return input;
-  }
-
-  const values = (Object.values(input) as (BucketKey5 | undefined)[]).filter(
-    (b): b is BucketKey5 => Boolean(b)
+// Deterministic pick:
+// - Find the two weakest pillars.
+// - Map combined pattern to a persona that drives tone + plan.
+export function getPersona(b: BucketsArg): PersonaKey {
+  const pillars = (Object.keys(b) as Pillar[]).sort(
+    (a, c) => rankOrder[b[a]] - rankOrder[b[c]]
   );
+  const weakest = pillars.slice(0, 2).sort().join("|");
 
-  if (values.length === 0) {
-    return "building";
-  }
-
-  return values.reduce((weakest, current) => (
-    personaBucketRank[current] < personaBucketRank[weakest] ? current : weakest
-  ));
-}
-
-export function getPersona(input: PersonaInput): PersonaKey {
-  const bucket = resolvePersonaBucket(input);
-
-  switch (bucket) {
-    case "building":
-      return "rebuilder";
-    case "getting_started":
-      return "getting_started";
-    case "progress":
-      return "progress";
-    case "on_track":
-      return "on_track";
-    case "empowered":
-      return "empowered";
+  switch (weakest) {
+    case "access|confidence":
+    case "access|habits":
+      return "starter";    // building comfort + basic access & routines
+    case "habits|stability":
+    case "stability|confidence":
+      return "rebuilder";  // reduce pressure, tiny wins, stabilize cashflow
+    case "resilience|stability":
+      return "steadier";   // shockproof systems, buffers, fraud/scam guard
+    case "confidence|resilience":
+      return "navigator";  // decisions, coaching, ‘talk tracks’, resilience reps
     default:
-      return "rebuilder";
+      return "planner";    // overall on track; optimize plan and goals
   }
 }
+
+type Localized<T> = { en: T; es: T };
 
 export const personaCopy: Record<
   PersonaKey,
   {
+    icon: string;
     title: Localized<string>;
     subtitle: Localized<string>;
     about: Localized<string>;
     focus: Localized<string[]>;
-    plan30day: Localized<string[]>;
   }
 > = {
   rebuilder: {
-    title: L("Rebuilder", "Reconstruyendo"),
-    subtitle: L(
-      "Small, fast wins to lower stress and regain control.",
-      "Pequeñas victorias rápidas para bajar el estrés y recuperar el control."
-    ),
-    about: L(
-      "You’re carrying real pressure. We’ll start with one safety step, one clear bill rule, and one weekly money check-in.",
-      "Llevas presión real. Empezamos con un paso de seguridad, una regla clara para cuentas y una revisión semanal del dinero."
-    ),
-    focus: L(
-      [
-        "Mini emergency buffer ($100–$300).",
-        "Autopay minimums on essentials.",
-        "One weekly 10-minute money check-in.",
-      ],
-      [
-        "Colchón de emergencia pequeño ($100–$300).",
-        "Pagos automáticos mínimos en lo esencial.",
-        "Una revisión semanal de 10 minutos.",
-      ]
-    ),
-    plan30day: L(
-      [
-        "Open a no-fee savings; set $10–$15 auto-transfer.",
-        "List bills by due date; enable autopay minimums.",
-        "Pick one high-stress bill and call to set a plan.",
-      ],
-      [
-        "Abre un ahorro sin comisiones; auto-traspaso de $10–$15.",
-        "Lista las cuentas por fecha; activa mínimos automáticos.",
-        "Elige la cuenta que más te estresa y acuerda un plan.",
-      ]
-    ),
+    icon: "🧰",
+    title: {
+      en: "The Rebuilder",
+      es: "La/El Reconstructor(a)",
+    },
+    subtitle: {
+      en: "Lower stress first, then steady the basics.",
+      es: "Primero baja el estrés, luego estabiliza lo básico.",
+    },
+    about: {
+      en: "You’re carrying real pressure. We’ll stack small wins and rebuild a sense of control.",
+      es: "Llevas mucha presión. Sumaremos pequeñas victorias para recuperar el control.",
+    },
+    focus: {
+      en: ["Micro-habits for bills", "Emergency mini-buffer", "Debt options you can trust"],
+      es: ["Micro-hábitos de pagos", "Mini-colchón de emergencia", "Opciones de deuda confiables"],
+    },
   },
-
-  getting_started: {
-    title: L("Stabilizer", "Estabilizando"),
-    subtitle: L(
-      "Build rhythm and reduce surprises.",
-      "Crea ritmo y reduce sorpresas."
-    ),
-    about: L(
-      "You’ve got pieces in place. Next is steady rhythm—small buffer growth, simple automation, and clear spending priorities.",
-      "Ya tienes piezas colocadas. Ahora ritmo constante: crecer el colchón, automatizar y priorizar el gasto."
-    ),
-    focus: L(
-      [
-        "Grow buffer toward 1 month of essentials.",
-        "Round-up or $25 auto-saves.",
-        "Sinking funds for car/medical/holidays.",
-      ],
-      [
-        "Aumenta el colchón hacia 1 mes de esenciales.",
-        "Redondeos o ahorros automáticos de $25.",
-        "Fondos de reserva: auto/médico/festivos.",
-      ]
-    ),
-    plan30day: L(
-      [
-        "Add one sinking fund (car repair) with auto-save.",
-        "Set a ‘needs-first’ grocery list template.",
-        "Schedule a monthly money hour.",
-      ],
-      [
-        "Crea un fondo de reserva (auto) con ahorro automático.",
-        "Usa una lista de supermercado ‘necesidades primero’.",
-        "Programa una ‘hora de dinero’ mensual.",
-      ]
-    ),
+  starter: {
+    icon: "🌱",
+    title: { en: "The Starter", es: "La/El Principiante" },
+    subtitle: {
+      en: "Comfort + access unlock your momentum.",
+      es: "Comodidad + acceso para activar tu impulso.",
+    },
+    about: {
+      en: "You’re ready to begin with simple steps and a friendly guide at your side.",
+      es: "Estás listo para empezar con pasos simples y una guía amigable.",
+    },
+    focus: {
+      en: ["ITIN-friendly accounts", "Avoiding common fees", "Judgment-free confidence boosts"],
+      es: ["Cuentas aptas para ITIN", "Evitar cargos comunes", "Confianza sin juicios"],
+    },
   },
-
-  progress: {
-    title: L("Builder", "Construyendo"),
-    subtitle: L(
-      "Lock in habits and accelerate progress.",
-      "Consolida hábitos y acelera el progreso."
-    ),
-    about: L(
-      "Habits are forming. Let’s automate key moves and accelerate savings while trimming hidden costs.",
-      "Los hábitos se afianzan. Automatizamos movimientos clave y aceleramos el ahorro recortando costos ocultos."
-    ),
-    focus: L(
-      [
-        "Debt paydown plan (highest cost first or snowball).",
-        "Auto-increase savings by 1–2% per quarter.",
-        "Fee audit: remove avoidable charges.",
-      ],
-      [
-        "Plan de pago de deudas (mayor costo o bola de nieve).",
-        "Aumenta el ahorro automático 1–2% por trimestre.",
-        "Audita comisiones y elimina cargos evitables.",
-      ]
-    ),
-    plan30day: L(
-      [
-        "Refinance or consolidate one high-APR balance (if eligible).",
-        "Auto-bump savings by $10/month.",
-        "Cancel one unused subscription.",
-      ],
-      [
-        "Refinancia o consolida un saldo con APR alto (si aplica).",
-        "Aumenta el ahorro automático $10/mes.",
-        "Cancela una suscripción no usada.",
-      ]
-    ),
+  steadier: {
+    icon: "🛡️",
+    title: { en: "The Steadier", es: "La/El Estabilizador(a)" },
+    subtitle: {
+      en: "Shock-proof your money life.",
+      es: "A prueba de choques en tu vida financiera.",
+    },
+    about: {
+      en: "You’re building stability. We’ll strengthen buffers and guard against fraud and surprises.",
+      es: "Estás construyendo estabilidad. Fortalezcamos colchones y prepárate contra fraudes y sorpresas.",
+    },
+    focus: {
+      en: ["Rainy-day fund", "Scam defense", "Insurance & income buffers"],
+      es: ["Fondo de emergencia", "Defensa ante estafas", "Seguros y respaldo de ingresos"],
+    },
   },
-
-  on_track: {
-    title: L("Optimizer", "Optimizando"),
-    subtitle: L(
-      "Reinforce routines and keep buffers growing.",
-      "Refuerza rutinas y sigue creciendo los colchones."
-    ),
-    about: L(
-      "You’re on a steady track. We’ll reinforce habits, grow emergency savings, and plan around upcoming milestones.",
-      "Vas en buen camino. Reforzaremos hábitos, creceremos el ahorro de emergencia y planificaremos los próximos hitos."
-    ),
-    focus: L(
-      [
-        "Keep building toward 3 months of essentials.",
-        "Tune cash flow—automate key bills and savings.",
-        "Plan for near-term goals (car, medical, holidays).",
-      ],
-      [
-        "Sigue avanzando hacia 3 meses de esenciales.",
-        "Ajusta el flujo: automatiza pagos y ahorros clave.",
-        "Planea metas cercanas (auto, médico, festividades).",
-      ]
-    ),
-    plan30day: L(
-      [
-        "Raise your auto-transfer by a small amount.",
-        "Schedule a monthly money hour to review goals.",
-        "List major expenses due in the next 6 months.",
-      ],
-      [
-        "Aumenta tu transferencia automática un poco.",
-        "Programa una hora mensual para revisar metas.",
-        "Lista gastos grandes de los próximos 6 meses.",
-      ]
-    ),
+  planner: {
+    icon: "🧭",
+    title: { en: "The Planner", es: "La/El Planificador(a)" },
+    subtitle: {
+      en: "Tidy systems, clearer goals.",
+      es: "Sistemas ordenados, metas claras.",
+    },
+    about: {
+      en: "You’re on track. Let’s align savings, debt strategy, and milestones with what you value.",
+      es: "Vas bien. Alineemos ahorro, estrategia de deuda y metas con lo que valoras.",
+    },
+    focus: {
+      en: ["Automations & goals", "Debt payoff strategy", "Milestone planning"],
+      es: ["Automatizaciones y metas", "Estrategia de pago de deuda", "Planificación de hitos"],
+    },
   },
-
-  empowered: {
-    title: L("Optimizer", "Optimizando"),
-    subtitle: L(
-      "Protect and optimize for the next 6–12 months.",
-      "Protege y optimiza para los próximos 6–12 meses."
-    ),
-    about: L(
-      "Solid foundation. Now optimize: protect against surprises, align investments to timeline, and tune cash flow.",
-      "Base sólida. Ahora optimiza: protégete de imprevistos, alinea inversiones al plazo y ajusta el flujo."
-    ),
-    focus: L(
-      [
-        "3–6 months expenses target.",
-        "Goal-based buckets (auto/home/education).",
-        "Review insurance and rate options.",
-      ],
-      [
-        "Meta de 3–6 meses de gastos.",
-        "Cuentas por metas (auto/hogar/educación).",
-        "Revisa seguros y opciones de tasas.",
-      ]
-    ),
-    plan30day: L(
-      [
-        "Raise emergency fund auto-save by 5–10%.",
-        "Annual ‘rate check’ on loans and CDs.",
-        "Map a 12-month Money Plan.",
-      ],
-      [
-        "Sube el ahorro de emergencia 5–10%.",
-        "‘Chequeo anual’ de tasas en préstamos y CDs.",
-        "Traza un plan de 12 meses.",
-      ]
-    ),
+  navigator: {
+    icon: "🎧",
+    title: { en: "The Navigator", es: "La/El Navegante" },
+    subtitle: {
+      en: "Decisions get easier with a co-pilot.",
+      es: "Las decisiones son más fáciles con un copiloto.",
+    },
+    about: {
+      en: "You want clarity for tricky choices. We’ll use scripts, checklists, and quick coaching.",
+      es: "Buscas claridad para decisiones difíciles. Usaremos guiones, listas y coaching breve.",
+    },
+    focus: {
+      en: ["Decision scripts", "Confidence reps", "Data-backed comparisons"],
+      es: ["Guiones para decidir", "Entrenamiento de confianza", "Comparaciones con datos"],
+    },
   },
 };
