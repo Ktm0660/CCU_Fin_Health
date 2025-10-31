@@ -1,38 +1,48 @@
-import Link from 'next/link';
-import { useRouter } from 'next/router';
-import { detectLocale, t, type Locale } from '@/lib/locale';
+"use client";
 
-function switchPath(path: string, to: Locale) {
-  // normalize: /, /en/..., /es/...
-  if (to === 'en') {
-    return path.replace(/^\/es(\/|$)/, '/en$1').replace(/^\/$/, '/en');
-  }
-  return path.replace(/^\/en(\/|$)/, '/es$1').replace(/^\/$/, '/es');
+import { useEffect, useState } from "react";
+import Link from "next/link";
+
+import LanguageToggle from "@/components/LanguageToggle";
+import { getLangFromQueryOrStorage, type Lang } from "@/lib/lang";
+import { t } from "@/lib/i18n";
+
+function hrefWithLang(href: string, lang: Lang) {
+  const [path, hash] = href.split("#");
+  const sep = path.includes("?") ? "&" : "?";
+  const withLang = `${path}${path.includes("lang=") ? "" : `${sep}lang=${lang}`}`;
+  return hash ? `${withLang}#${hash}` : withLang;
 }
 
 export default function SiteHeader() {
-  const router = useRouter();
-  const locale = detectLocale(router.asPath, router.locale);
-  const other = locale === 'en' ? 'es' : 'en';
-  const hereOther = switchPath(router.asPath || '/', other as Locale);
-  const hereHome = locale === 'en' ? '/en' : '/es';
+  const [lang, setLang] = useState<Lang>("en");
+
+  useEffect(() => {
+    setLang(getLangFromQueryOrStorage());
+  }, []);
+
+  const appName = t(lang, "appName");
+
+  const links = [
+    { href: "/", label: t(lang, "nav.home") },
+    { href: "/assessment", label: t(lang, "nav.assessment") },
+    { href: "/resources", label: t(lang, "nav.resources") },
+    { href: "/glossary", label: t(lang, "nav.glossary") },
+  ];
 
   return (
     <header className="sticky top-0 z-40 w-full bg-white/70 backdrop-blur border-b border-slate-100">
       <div className="mx-auto max-w-3xl px-4 py-3 flex items-center justify-between">
-        <Link href={hereHome} className="text-slate-900 font-semibold">
-          CCU Financial Health
+        <Link href={hrefWithLang("/", lang)} className="text-slate-900 font-semibold">
+          {appName}
         </Link>
         <nav className="flex items-center gap-3">
-          <Link href={hereHome} className="text-sm text-slate-700 hover:underline">
-            {t('Home', 'Inicio', locale)}
-          </Link>
-          <Link href={`${hereHome}/plan`} className="text-sm text-slate-700 hover:underline">
-            {t('Snapshot', 'Panorama', locale)}
-          </Link>
-          <Link href={hereOther} className="ml-3 rounded-full border px-3 py-1 text-sm">
-            {locale === 'en' ? 'Español' : 'English'}
-          </Link>
+          {links.map(link => (
+            <Link key={link.href} href={hrefWithLang(link.href, lang)} className="text-sm text-slate-700 hover:underline">
+              {link.label}
+            </Link>
+          ))}
+          <LanguageToggle className="ml-2" />
         </nav>
       </div>
     </header>

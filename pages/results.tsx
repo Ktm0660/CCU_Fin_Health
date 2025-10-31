@@ -1,94 +1,156 @@
-import { useEffect, useMemo, useState } from "react";
-import {
-  getRandomizedQuestions,
-  scoreAnswers,
-  normalize0to100,
-  type Pillar
-} from "@/data/assessment";
+import { useRouter } from "next/router";
+import { useEffect, useMemo } from "react";
+import Link from "next/link";
 
-function Stat({ label, value, max }: { label: string; value: number; max: number }) {
-  const pct = Math.round((value / Math.max(1, max)) * 100);
+import { scoreAnswers, bucketize5, bucketCopy, type Score, type AnswerMap, questionsBase } from "@/data/assessment";
+import { recommend } from "@/data/recommendations";
+import { getLangFromQueryOrStorage } from "@/lib/lang";
+import { loadAnswers } from "@/lib/state";
+
+function readAnswers(queryA: string | string[] | undefined): AnswerMap {
+  if (typeof window !== "undefined") {
+    if (typeof queryA === "string" && queryA.trim().startsWith("{")) {
+      try {
+        return JSON.parse(queryA);
+      } catch {}
+    }
+    const ls = localStorage.getItem("lastAnswers");
+    if (ls) {
+      try {
+        return JSON.parse(ls);
+      } catch {}
+    }
+    const fallback = loadAnswers();
+    if (fallback && typeof fallback === "object") {
+      if ("answers" in (fallback as any)) {
+        return ((fallback as any).answers ?? {}) as AnswerMap;
+      }
+      return fallback as AnswerMap;
+    }
+  }
+  return {};
+}
+
+export default function Results() {
+  const router = useRouter();
+  const lang = (typeof window !== "undefined" ? getLangFromQueryOrStorage() : "en") as "en" | "es";
+  const answers = useMemo(() => readAnswers(router.query.a), [router.query.a]);
+
+  const s = useMemo<Score>(() => scoreAnswers(questionsBase, answers), [answers]);
+  const bucketInfo = useMemo(() => bucketize5(s), [s]);
+  const key = typeof bucketInfo === "string" ? bucketInfo : bucketInfo.key;
+  const copy = (bucketCopy as any)[key]?.[lang] || {
+    title: lang === "en" ? "Your profile" : "Tu perfil",
+    summary: "",
+    strengths: [],
+    focus: [],
+    tips: [],
+  };
+
+  const recs = useMemo(() => recommend(key as any), [key]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") window.scrollTo({ top: 0 });
+  }, []);
+
+  const retakeHref = `/assessment?lang=${lang}`;
+
   return (
-    <div className="bg-white rounded-2xl shadow p-4 border">
-      <div className="flex items-baseline justify-between">
-        <h3 className="font-semibold text-ink-900">{label}</h3>
-        <span className="text-sm text-slate-600">{value} / {max} ({pct}%)</span>
+    <section>
+      <div className="rounded-3xl bg-brand-50 border p-6 md:p-8 shadow mb-6">
+        <div className="flex items-start justify-between gap-4">
+          <h1 className="text-2xl md:text-3xl font-semibold text-ink-900">
+            {lang === "en" ? "Your Financial Profile" : "Tu perfil financiero"}
+          </h1>
+          <Link href={retakeHref} className="text-sm underline">
+            {lang === "en" ? "Retake assessment" : "Repetir evaluación"}
+          </Link>
+        </div>
+
+        <div className="mt-3">
+          <span className="inline-block text-xs px-2 py-1 rounded-full bg-white border">
+            {lang === "en" ? "Profile" : "Perfil"}: {copy.title}
+          </span>
+        </div>
+
+        {copy.summary && (
+          <p className="mt-4 text-slate-800 text-base leading-relaxed">
+            {copy.summary}
+          </p>
+        )}
+
+        <div className="mt-5 grid md:grid-cols-3 gap-4">
+          <Card title={lang === "en" ? "Where you’re strong" : "Fortalezas"}>
+            <Bullets items={copy.strengths} />
+          </Card>
+          <Card title={lang === "en" ? "What to focus on" : "En qué enfocarte"}>
+            <Bullets items={copy.focus} />
+          </Card>
+          <Card title={lang === "en" ? "Quick wins" : "Victorias rápidas"}>
+            <Bullets items={copy.tips} />
+          </Card>
+        </div>
       </div>
-      <div className="mt-2 h-2 rounded-full bg-slate-200">
-        <div className="h-2 rounded-full bg-brand-500" style={{ width: `${pct}%` }} />
+
+      <div className="rounded-3xl bg-white border p-6 shadow">
+        <h2 className="text-xl md:text-2xl font-semibold text-ink-900">
+          {lang === "en" ? "Your action plan" : "Tu plan de acción"}
+        </h2>
+        <p className="mt-2 text-slate-700">
+          {lang === "en"
+            ? "Learn by doing. These short lessons and tools match your profile."
+            : "Aprende haciendo. Estas lecciones y herramientas se ajustan a tu perfil."}
+        </p>
+
+        <div className="mt-4 grid md:grid-cols-3 gap-4">
+          {recs.map((r: any) => (
+            <div key={r.slug || r.title_en || r.title} className="rounded-2xl border p-4 shadow-sm bg-slate-50">
+              <h3 className="font-semibold text-ink-900">
+                {lang === "en" ? (r.title_en || r.title) : (r.title_es || r.title)}
+              </h3>
+              {r.summary_en && (
+                <p className="text-sm text-slate-700 mt-1">
+                  {lang === "en" ? r.summary_en : (r.summary_es || r.summary_en)}
+                </p>
+              )}
+              <div className="mt-2">
+                <Link href={r.href || "/tools"} className="text-sm underline">
+                  {lang === "en" ? "Open guide →" : "Abrir guía →"}
+                </Link>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-6 flex gap-3 flex-wrap">
+          <Link href={`/tools?lang=${lang}`} className="px-4 py-2 rounded-xl border no-underline">
+            {lang === "en" ? "Explore more tools" : "Explorar más herramientas"}
+          </Link>
+          <Link href={`/glossary?lang=${lang}`} className="px-4 py-2 rounded-xl bg-brand-500 text-white no-underline">
+            {lang === "en" ? "Jargon Breakdown" : "Glosario sin jerga"}
+          </Link>
+        </div>
       </div>
+    </section>
+  );
+}
+
+function Card({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl bg-white border p-4 shadow-sm">
+      <h3 className="font-semibold text-ink-900">{title}</h3>
+      <div className="mt-2 text-sm text-slate-800">{children}</div>
     </div>
   );
 }
 
-export default function Results() {
-  const [payload, setPayload] = useState<{ order: any[]; answers: Record<string, number> } | null>(null);
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem("ccu_assessment_payload");
-      if (raw) setPayload(JSON.parse(raw));
-    } catch {}
-  }, []);
-
-  const randomized = useMemo(() => {
-    // We can't reconstruct the exact question/option order perfectly here without heavier persistence;
-    // results use ids and weights, so order doesn't matter for scoring.
-    return getRandomizedQuestions();
-  }, []);
-
-  const s = useMemo(() => {
-    if (!payload) {
-      return scoreAnswers(randomized, {}); // empty state
-    }
-    return scoreAnswers(randomized, payload.answers);
-  }, [payload, randomized]);
-
-  const labels: Record<Pillar, string> = {
-    habits: "Habits",
-    confidence: "Confidence",
-    stability: "Stability",
-    trust: "Trust & Access",
-    resilience: "Resilience"
-  };
-
-  const overallPct = normalize0to100(s.total, s.totalMax);
-
+function Bullets({ items }: { items: string[] }) {
+  if (!items || !items.length) return <p className="text-slate-600">—</p>;
   return (
-    <section>
-      <div className="bg-brand-50 border rounded-2xl p-5 mb-5">
-        <h1 className="text-2xl font-semibold text-ink-900">Your Financial Health Snapshot</h1>
-        <p className="mt-2 text-slate-700">
-          This is a friendly snapshot of where you’re strong and where small changes could help most.
-        </p>
-        <div className="mt-4">
-          <div className="flex items-center justify-between">
-            <span className="font-medium">Overall</span>
-            <span className="text-sm text-slate-700">{s.total} / {s.totalMax} ({overallPct}%)</span>
-          </div>
-          <div className="mt-2 h-3 rounded-full bg-slate-200">
-            <div className="h-3 rounded-full bg-brand-600" style={{ width: `${overallPct}%` }} />
-          </div>
-        </div>
-      </div>
-
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {(Object.keys(labels) as Pillar[]).map(p => (
-          <Stat key={p} label={labels[p]} value={s.byPillar[p]} max={s.maxByPillar[p]} />
-        ))}
-      </div>
-
-      <div className="bg-white rounded-2xl shadow p-5 border mt-6">
-        <h2 className="text-xl font-semibold text-ink-900">What to do next</h2>
-        <p className="text-slate-700 mt-2">
-          Pick one area below and take a small step this week. We’ll soon tailor lessons, tools, and products to your pattern.
-        </p>
-        <ul className="list-disc ml-6 space-y-2 mt-3">
-          <li>Start a tiny emergency buffer ($50–$200) by auto-moving money on payday.</li>
-          <li>Schedule bills and minimums; choose one “pay-down day” monthly.</li>
-          <li>Use a simple spending list: needs first, then goals, then wants.</li>
-        </ul>
-      </div>
-    </section>
+    <ul className="list-disc ml-5 space-y-1">
+      {items.map((x, i) => (
+        <li key={i}>{x}</li>
+      ))}
+    </ul>
   );
 }
