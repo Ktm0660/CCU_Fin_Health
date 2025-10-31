@@ -6,10 +6,11 @@ const L = (en: string, es: string): Localized<string> => ({ en, es });
 
 /** Canonical bucket labels shown to users (friendly names) */
 const labels: Record<Bucket5, string> = {
-  at_risk: "Rebuilder",
-  vulnerable: "Stabilizer",
-  building: "Builder",
-  thriving: "Planner / Optimizer",
+  building: "Building",
+  getting_started: "Getting Started",
+  progress: "Making Progress",
+  on_track: "On Track",
+  empowered: "Empowered",
 };
 
 /** Copy used on the results page */
@@ -20,23 +21,27 @@ export const resultsCopy = {
 
     body: (b: Bucket5) => {
       const en: Record<Bucket5, string> = {
-        at_risk:
-          "You’re under real pressure. We’ll focus on fast, low-stress wins: one safety step, one bill rule, one weekly habit.",
-        vulnerable:
-          "Pieces are in place. Next is steady rhythm: a small buffer, simple bill automation, and clear priorities.",
         building:
+          "You’re under real pressure. We’ll focus on fast, low-stress wins: one safety step, one bill rule, one weekly habit.",
+        getting_started:
+          "Pieces are in place. Next is steady rhythm: a small buffer, simple bill automation, and clear priorities.",
+        progress:
           "Habits are forming. Let’s automate key moves and accelerate savings while reducing friction.",
-        thriving:
+        on_track:
+          "You’re on a steady track. We’ll reinforce routines, grow buffers, and plan upcoming milestones.",
+        empowered:
           "Solid foundation. Now optimize: protect against surprises, cut hidden costs, and align to 6–12 month goals.",
       };
       const es: Record<Bucket5, string> = {
-        at_risk:
-          "Estás bajo presión. Iremos por victorias rápidas y de poco estrés: un paso de seguridad, una regla para cuentas y un hábito semanal.",
-        vulnerable:
-          "Tienes piezas en su lugar. Lo siguiente es un ritmo constante: un pequeño colchón, automatizar pagos y prioridades claras.",
         building:
+          "Estás bajo presión. Iremos por victorias rápidas y de poco estrés: un paso de seguridad, una regla para cuentas y un hábito semanal.",
+        getting_started:
+          "Tienes piezas en su lugar. Lo siguiente es un ritmo constante: un pequeño colchón, automatizar pagos y prioridades claras.",
+        progress:
           "Los hábitos están tomando forma. Automatizaremos movimientos clave y aceleraremos el ahorro reduciendo fricción.",
-        thriving:
+        on_track:
+          "Vas en buen camino. Reforzaremos rutinas, creceremos los colchones y planificaremos los próximos hitos.",
+        empowered:
           "Una base sólida. Ahora optimiza: protégete de imprevistos, reduce costos ocultos y alinea metas de 6–12 meses.",
       };
       return { en: en[b], es: es[b] };

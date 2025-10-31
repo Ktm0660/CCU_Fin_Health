@@ -2,7 +2,7 @@ import { useRouter } from "next/router";
 import { useMemo } from "react";
 import * as Assess from "@/data/assessment";
 import type { BucketKey5 } from "@/data/assessment";
-import { scoreAnswers, bucketize5 } from "@/data/assessment";
+import { scoreAnswers, bucketize5, rankOrder5 } from "@/data/assessment";
 import { personaCopy, getPersona } from "@/data/personas";
 import { recommend } from "@/data/recommendations";
 import Link from "next/link";
@@ -13,12 +13,7 @@ import { loadAnswers } from "@/lib/state";
 import { pickLessons, Area, Level } from "@/data/lessons";
 import LessonCard from "@/components/LessonCard";
 
-type Bucket =
-  | "rebuilding"
-  | "getting_started"
-  | "progress"
-  | "on_track"
-  | "empowered";
+type Bucket = BucketKey5;
 
 function Card({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -74,19 +69,10 @@ export default function PlanPage() {
   type Locale = "en" | "es";
   const pick = <T,>(loc: Locale, v: { en: T; es: T }) => v[loc];
 
-  // Rank order for 5-level buckets (1 = weakest)
-  const rankOrder: Record<BucketKey5, number> = {
-    rebuilding: 1,
-    getting_started: 2,
-    progress: 3,
-    on_track: 4,
-    empowered: 5,
-  };
-
-  // Compute overall as the weakest dimension
+  // Compute overall as the weakest dimension (lowest rank)
   const overall: BucketKey5 = (Object.values(buckets) as BucketKey5[]).reduce(
-    (weakest, cur) => (rankOrder[cur] < rankOrder[weakest] ? cur : weakest),
-    "empowered" // initial high value that will be replaced
+    (weakest, cur) => (rankOrder5[cur] < rankOrder5[weakest] ? cur : weakest),
+    "empowered" // start high, then minimize
   );
 
   const persona = getPersona(overall);
@@ -98,26 +84,18 @@ export default function PlanPage() {
   const personaFocus = pick(locale as Locale, P.focus);
   const personaPlan  = pick(locale as Locale, P.plan30day);
 
-  const rank: Record<Bucket, number> = {
-    rebuilding: 1,
-    getting_started: 2,
-    progress: 3,
-    on_track: 4,
-    empowered: 5,
-  };
-
   // Determine primary/secondary focus by lowest-ranked dimension
   const order = [
-    { key: "stability", r: rank[buckets.stability as Bucket] },
-    { key: "habits", r: rank[buckets.habits as Bucket] },
-    { key: "confidence", r: rank[buckets.confidence as Bucket] },
+    { key: "stability", r: rankOrder5[buckets.stability] },
+    { key: "habits", r: rankOrder5[buckets.habits] },
+    { key: "confidence", r: rankOrder5[buckets.confidence] },
   ].sort((a, z) => a.r - z.r);
   const primary = order[0].key as "habits" | "confidence" | "stability";
   const secondary = order[1].key as "habits" | "confidence" | "stability";
 
   // Map persona to a starting lesson level
-  const personaLevelMap: Record<string, Level> = {
-    rebuilding: "discover",
+  const personaLevelMap: Record<BucketKey5, Level> = {
+    building: "discover",
     getting_started: "stabilize",
     progress: "grow",
     on_track: "grow",
@@ -240,7 +218,7 @@ function areaTitle(
       : locale === "en" ? "Stability" : "Estabilidad";
 
   const badge: Record<Bucket, string> = {
-    rebuilding: locale === "en" ? "Rebuilding" : "Reconstruyendo",
+    building: locale === "en" ? "Building" : "Construyendo",
     getting_started: locale === "en" ? "Getting Started" : "Empezando",
     progress: locale === "en" ? "Making Progress" : "Tomando ritmo",
     on_track: locale === "en" ? "On Track" : "En buen camino",
@@ -258,7 +236,7 @@ function stepsByArea(
   const groups: { title: string; items: string[] }[] = [];
 
   if (area === "stability") {
-    if (bucket === "rebuilding" || bucket === "getting_started") {
+    if (bucket === "building" || bucket === "getting_started") {
       groups.push({
         title: L("This week", "Esta semana"),
         items: [
@@ -297,7 +275,7 @@ function stepsByArea(
   }
 
   if (area === "habits") {
-    if (bucket === "rebuilding" || bucket === "getting_started") {
+    if (bucket === "building" || bucket === "getting_started") {
       groups.push({
         title: L("This week", "Esta semana"),
         items: [
@@ -329,7 +307,7 @@ function stepsByArea(
   }
 
   if (area === "confidence") {
-    if (bucket === "rebuilding" || bucket === "getting_started") {
+    if (bucket === "building" || bucket === "getting_started") {
       groups.push({
         title: L("This week", "Esta semana"),
         items: [
