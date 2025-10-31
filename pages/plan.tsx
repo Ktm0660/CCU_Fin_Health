@@ -1,19 +1,24 @@
 import { useRouter } from "next/router";
 import { useMemo } from "react";
-import { scoreAnswers, bucketize5, type BucketKey5, questionsBase } from "@/data/assessment";
+import {
+  scoreAnswers,
+  questionsBase,
+  bucketize5,
+  maxFor,
+  type BucketKey5,
+} from "@/data/assessment";
 import { pickLessons, Area, Level } from "@/data/lessons";
 import LessonCard from "@/components/LessonCard";
-import { personaCopy, getPersona, type PersonaKey } from "@/data/personas";
-import { recommend } from "@/data/recommendations";
+import { recommend, type BucketsArg, type Locale } from "@/data/recommendations";
+import { personaCopy, getPersona } from "@/data/personas";
+import type { PersonaKey } from "@/data/personas";
 import Link from "next/link";
 import { t } from "@/lib/i18n";
 import { loadAnswers } from "@/lib/state";
 
-type Locale = "en" | "es";
 type Localized<T> = { en: T; es: T };
 const pick = <T,>(loc: Locale, v: Localized<T>): T => v[loc];
 type Score = ReturnType<typeof scoreAnswers>;
-type AreaKey = "habits" | "confidence" | "stability" | "access" | "knowledge";
 
 const bucketRank: Record<BucketKey5, number> = {
   building: 0,
@@ -59,25 +64,49 @@ export default function PlanPage() {
     return scoreAnswers(questionsBase, answers);
   }, [payload]);
 
-  const locale = (router.locale as Locale) || "en";
+  const locale = (router.locale ?? "en") as Locale;
 
-  const dims: AreaKey[] = ["habits", "confidence", "stability", "access", "knowledge"];
-  const pillarMap: Record<AreaKey, keyof Score["byPillar"]> = {
-    habits: "habits",
-    confidence: "confidence",
-    stability: "stability",
-    access: "trust",
-    knowledge: "resilience"
+  const s = {
+    habits: score.byPillar.habits ?? 0,
+    maxHabits: score.maxByPillar.habits ?? 0,
+    confidence: score.byPillar.confidence ?? 0,
+    maxConfidence: score.maxByPillar.confidence ?? 0,
+    stability: score.byPillar.stability ?? 0,
+    maxStability: score.maxByPillar.stability ?? 0,
+    access: score.byPillar.trust ?? 0,
+    maxAccess: score.maxByPillar.trust ?? 0,
+    resilience: score.byPillar.resilience ?? 0,
+    maxResilience: score.maxByPillar.resilience ?? 0,
   };
 
-  const buckets = dims.reduce((acc, key) => {
-    const pillar = pillarMap[key];
-    const val = score.byPillar[pillar] ?? 0;
-    const max = score.maxByPillar[pillar] ?? 0;
-    const pct = max > 0 ? val / max : 0;
-    acc[key] = bucketize5(pct);
-    return acc;
-  }, {} as Record<AreaKey, BucketKey5>);
+  // Build 5-pillar buckets for persona + recs.
+  // We read from s.* if present; otherwise guard to 0.
+  // For 'resilience', if the scoring fields aren't wired yet, mirror 'stability' so types pass and UX works.
+  const buckets: BucketsArg = (() => {
+    const hVal = typeof (s as any).habits === "number" ? (s as any).habits : 0;
+    const hMax = (s as any).maxHabits ?? maxFor("habits");
+    const habits = bucketize5(hVal, hMax);
+
+    const cVal = typeof (s as any).confidence === "number" ? (s as any).confidence : 0;
+    const cMax = (s as any).maxConfidence ?? maxFor("confidence");
+    const confidence = bucketize5(cVal, cMax);
+
+    const stVal = typeof (s as any).stability === "number" ? (s as any).stability : 0;
+    const stMax = (s as any).maxStability ?? maxFor("stability");
+    const stability = bucketize5(stVal, stMax);
+
+    const aVal = typeof (s as any).access === "number" ? (s as any).access : 0;
+    const aMax = (s as any).maxAccess ?? maxFor("access");
+    const access = bucketize5(aVal, aMax);
+
+    // New pillar
+    const rHasVals = typeof (s as any).resilience === "number" && typeof (s as any).maxResilience === "number";
+    const rVal = rHasVals ? (s as any).resilience : stVal;
+    const rMax = rHasVals ? (s as any).maxResilience : stMax ?? maxFor("resilience");
+    const resilience = bucketize5(rVal, rMax);
+
+    return { habits, confidence, stability, access, resilience };
+  })();
 
   // Persona engine
   const persona = getPersona(buckets);
@@ -108,18 +137,7 @@ export default function PlanPage() {
   // Pick lessons for primary focus area
   const recLessons = pickLessons(primary as Area, startLevel, locale, 3);
 
-  // Recommendations (prioritize habits, confidence, stability, then access, knowledge)
-  const recs = recommend(
-    {
-      habits: buckets.habits,
-      confidence: buckets.confidence,
-      stability: buckets.stability,
-      access: (buckets as any).access,
-      knowledge: (buckets as any).knowledge
-    },
-    ["habits", "confidence", "stability", "access", "knowledge"],
-    6
-  );
+  const recs = recommend(buckets, locale, { limit: 6 });
 
   const L = (en: string, es: string) => (locale === "en" ? en : es);
 
