@@ -1,16 +1,17 @@
 import { useRouter } from "next/router";
 import { useMemo } from "react";
+
 import {
   scoreAnswers,
   questionsBase,
   bucketize5,
-  maxFor,
   type BucketKey5,
 } from "@/data/assessment";
+
+import { personaCopy, getPersona } from "@/data/personas";
+import { recommend, type BucketsArg, type Locale } from "@/data/recommendations";
 import { pickLessons, Area, Level } from "@/data/lessons";
 import LessonCard from "@/components/LessonCard";
-import { recommend, type BucketsArg, type Locale } from "@/data/recommendations";
-import { personaCopy, getPersona } from "@/data/personas";
 import type { PersonaKey } from "@/data/personas";
 import Link from "next/link";
 import { t } from "@/lib/i18n";
@@ -64,7 +65,7 @@ export default function PlanPage() {
     return scoreAnswers(questionsBase, answers);
   }, [payload]);
 
-  const locale = (router.locale ?? "en") as Locale;
+  const locale = ((router.query.lang as string) || "en") as Locale;
 
   const s = {
     habits: score.byPillar.habits ?? 0,
@@ -79,31 +80,34 @@ export default function PlanPage() {
     maxResilience: score.maxByPillar.resilience ?? 0,
   };
 
-  // Build 5-pillar buckets for persona + recs.
-  // We read from s.* if present; otherwise guard to 0.
-  // For 'resilience', if the scoring fields aren't wired yet, mirror 'stability' so types pass and UX works.
+  // Helper: derive pillar maxes from scoreAnswers output or use safe defaults.
+  const getMax = (k: "habits" | "confidence" | "stability" | "access" | "resilience") => {
+    const map: Record<typeof k, number | undefined> = {
+      habits: (s as any).maxHabits,
+      confidence: (s as any).maxConfidence,
+      stability: (s as any).maxStability,
+      access: (s as any).maxAccess,
+      resilience: (s as any).maxResilience,
+    };
+    // Fallback default if not provided by scoreAnswers
+    return typeof map[k] === "number" ? (map[k] as number) : 100;
+  };
+
+  // Build 5-pillar buckets for persona + recommendations.
   const buckets: BucketsArg = (() => {
     const hVal = typeof (s as any).habits === "number" ? (s as any).habits : 0;
-    const hMax = (s as any).maxHabits ?? maxFor("habits");
-    const habits = bucketize5(hVal, hMax);
-
     const cVal = typeof (s as any).confidence === "number" ? (s as any).confidence : 0;
-    const cMax = (s as any).maxConfidence ?? maxFor("confidence");
-    const confidence = bucketize5(cVal, cMax);
-
     const stVal = typeof (s as any).stability === "number" ? (s as any).stability : 0;
-    const stMax = (s as any).maxStability ?? maxFor("stability");
-    const stability = bucketize5(stVal, stMax);
-
     const aVal = typeof (s as any).access === "number" ? (s as any).access : 0;
-    const aMax = (s as any).maxAccess ?? maxFor("access");
-    const access = bucketize5(aVal, aMax);
 
-    // New pillar
-    const rHasVals = typeof (s as any).resilience === "number" && typeof (s as any).maxResilience === "number";
-    const rVal = rHasVals ? (s as any).resilience : stVal;
-    const rMax = rHasVals ? (s as any).maxResilience : stMax ?? maxFor("resilience");
-    const resilience = bucketize5(rVal, rMax);
+    // If resilience isn't wired in scoring yet, mirror stability for now so types and UX work.
+    const rVal = typeof (s as any).resilience === "number" ? (s as any).resilience : stVal;
+
+    const habits = bucketize5(hVal, getMax("habits"));
+    const confidence = bucketize5(cVal, getMax("confidence"));
+    const stability = bucketize5(stVal, getMax("stability"));
+    const access = bucketize5(aVal, getMax("access"));
+    const resilience = bucketize5(rVal, getMax("resilience"));
 
     return { habits, confidence, stability, access, resilience };
   })();
