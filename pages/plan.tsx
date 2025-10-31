@@ -107,6 +107,19 @@ export default function PlanPage() {
   // Pick lessons for primary focus area
   const recLessons = pickLessons(primary as Area, startLevel, locale, 3);
 
+  // Recommendations (prioritize habits, confidence, stability first, but include all when needed)
+  const recs = recommend(
+    {
+      habits: buckets.habits,
+      confidence: buckets.confidence,
+      stability: buckets.stability,
+      access: (buckets as any).access, // if present in your scoring
+      knowledge: (buckets as any).knowledge, // if present in your scoring
+    },
+    ["habits", "confidence", "stability", "access", "knowledge"],
+    6
+  );
+
   const L = (en: string, es: string) => (locale === "en" ? en : es);
 
   return (
@@ -180,14 +193,7 @@ export default function PlanPage() {
       {/* Tailored resources */}
       <h2 className="text-xl font-semibold mt-8 mb-3">{t(locale,"helpfulNext")}</h2>
       <ul className="list-disc ml-6 space-y-2">
-        {recommend(
-          {
-            habits: buckets.habits,
-            confidence: buckets.confidence,
-            stability: buckets.stability,
-          },
-          locale as "en" | "es"
-        ).map((r, i) =>
+        {recs.map((r, i) =>
           r.href.startsWith("http") ? (
             <li key={i}><a className="no-underline" href={r.href} target="_blank" rel="noreferrer">{r.title}</a></li>
           ) : (
