@@ -1,18 +1,27 @@
 import { useRouter } from "next/router";
 import { useMemo } from "react";
-import * as Assess from "@/data/assessment";
-import type { BucketKey5 } from "@/data/assessment";
-import { scoreAnswers, bucketize5, rankOrder5 } from "@/data/assessment";
-import type { PersonaKey } from "@/data/personas";
-import { personaCopy, getPersona } from "@/data/personas";
+import { scoreAnswers, bucketize5, type BucketKey5, questionsBase } from "@/data/assessment";
+import { pickLessons, Area, Level } from "@/data/lessons";
+import LessonCard from "@/components/LessonCard";
+import { personaCopy, getPersona, type PersonaKey } from "@/data/personas";
 import { recommend } from "@/data/recommendations";
 import Link from "next/link";
 import { t } from "@/lib/i18n";
 import { loadAnswers } from "@/lib/state";
 
-// NEW: lessons imports
-import { pickLessons, Area, Level } from "@/data/lessons";
-import LessonCard from "@/components/LessonCard";
+type Locale = "en" | "es";
+type Localized<T> = { en: T; es: T };
+const pick = <T,>(loc: Locale, v: Localized<T>): T => v[loc];
+type Score = ReturnType<typeof scoreAnswers>;
+type AreaKey = "habits" | "confidence" | "stability" | "access" | "knowledge";
+
+const bucketRank: Record<BucketKey5, number> = {
+  building: 0,
+  getting_started: 1,
+  progress: 2,
+  on_track: 3,
+  empowered: 4
+};
 
 type Bucket = BucketKey5;
 
@@ -27,72 +36,64 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
 
 export default function PlanPage() {
   const router = useRouter();
-  const locale = (router.locale as "en" | "es") || "en";
-  const ans = useMemo(() => {
+
+  const payload = useMemo(() => {
     try {
       if (router.query.a) return JSON.parse(router.query.a as string);
       return loadAnswers();
-    } catch { return loadAnswers(); }
+    } catch {
+      return loadAnswers();
+    }
   }, [router.query.a]);
 
-  // Resolve the current question bank safely from whatever the assessment module exports.
-  // Tries common names: questions, questionBank, allQuestions, bank, qset.
-  const qs =
-    (Assess as any).questions ||
-    (Assess as any).questionBank ||
-    (Assess as any).allQuestions ||
-    (Assess as any).bank ||
-    (Assess as any).qset ||
-    [];
-  const s = scoreAnswers(ans, qs);
-  // Helper to resolve corresponding max key in either "maxXxx" or "max_xxx" form
-  const maxFor = (k: string) => {
-    const pascal = "max" + k.charAt(0).toUpperCase() + k.slice(1);
-    const snake = "max_" + k;
-    return (s as any)[pascal] ?? (s as any)[snake] ?? 0;
+  const score = useMemo<Score>(() => {
+    if (payload && typeof payload === "object" && "byPillar" in payload && "maxByPillar" in payload) {
+      return payload as Score;
+    }
+
+    const answers: Record<string, number> =
+      payload && typeof payload === "object" && "answers" in payload
+        ? ((payload as { answers?: Record<string, number> }).answers ?? {})
+        : ((payload as Record<string, number>) ?? {});
+
+    return scoreAnswers(questionsBase, answers);
+  }, [payload]);
+
+  const locale = (router.locale as Locale) || "en";
+
+  const dims: AreaKey[] = ["habits", "confidence", "stability", "access", "knowledge"];
+  const pillarMap: Record<AreaKey, keyof Score["byPillar"]> = {
+    habits: "habits",
+    confidence: "confidence",
+    stability: "stability",
+    access: "trust",
+    knowledge: "resilience"
   };
-  const buckets = {} as Record<
-    "habits" | "confidence" | "stability" | "access" | "knowledge",
-    BucketKey5
-  >;
 
-  const dims: ("habits" | "confidence" | "stability" | "access" | "knowledge")[] =
-    ["habits", "confidence", "stability", "access", "knowledge"];
-
-  for (const k of dims) {
-    const val = (s as any)[k] ?? 0;
-    const max = maxFor(k);
+  const buckets = dims.reduce((acc, key) => {
+    const pillar = pillarMap[key];
+    const val = score.byPillar[pillar] ?? 0;
+    const max = score.maxByPillar[pillar] ?? 0;
     const pct = max > 0 ? val / max : 0;
-    buckets[k] = bucketize5(pct);
-  }
+    acc[key] = bucketize5(pct);
+    return acc;
+  }, {} as Record<AreaKey, BucketKey5>);
 
   // Persona engine
-  type Locale = "en" | "es";
-  const pick = <T,>(loc: Locale, v: { en: T; es: T }) => v[loc];
-
-  // Compute overall as the weakest dimension (lowest rank)
-  const overall: BucketKey5 = (Object.values(buckets) as BucketKey5[]).reduce(
-    (weakest, cur) => (rankOrder5[cur] < rankOrder5[weakest] ? cur : weakest),
-    "empowered" // start high, then minimize
-  );
-
-  const persona: PersonaKey = getPersona(overall);
+  const persona = getPersona(buckets);
   const P = personaCopy[persona];
 
-  const personaTitle = pick(locale as Locale, P.title);
-  const personaSubtitle = pick(locale as Locale, P.subtitle);
-  const personaAbout = pick(locale as Locale, P.about);
-  const personaFocus = pick(locale as Locale, P.focus);
-  const personaPlan = pick(locale as Locale, P.plan30day);
+  const personaTitle = pick(locale, P.title);
+  const personaSubtitle = pick(locale, P.subtitle);
+  const personaAbout = pick(locale, P.about);
+  const focusList = pick(locale, P.focus);
+  const plan30 = pick(locale, P.plan30day);
 
-  // Determine primary/secondary focus by lowest-ranked dimension
-  const order = [
-    { key: "stability", r: rankOrder5[buckets.stability] },
-    { key: "habits", r: rankOrder5[buckets.habits] },
-    { key: "confidence", r: rankOrder5[buckets.confidence] },
-  ].sort((a, z) => a.r - z.r);
-  const primary = order[0].key as "habits" | "confidence" | "stability";
-  const secondary = order[1].key as "habits" | "confidence" | "stability";
+  const priorityAreas = ["habits", "confidence", "stability"] as const;
+  type FocusArea = (typeof priorityAreas)[number];
+  const ordered = [...priorityAreas].sort((a, b) => bucketRank[buckets[a]] - bucketRank[buckets[b]]) as FocusArea[];
+  const primary = ordered[0] ?? "habits";
+  const secondary = ordered[1] ?? "confidence";
 
   // Map persona to a starting lesson level
   const personaLevelMap: Record<PersonaKey, Level> = {
@@ -107,14 +108,14 @@ export default function PlanPage() {
   // Pick lessons for primary focus area
   const recLessons = pickLessons(primary as Area, startLevel, locale, 3);
 
-  // Recommendations (prioritize habits, confidence, stability first, but include all when needed)
+  // Recommendations (prioritize habits, confidence, stability, then access, knowledge)
   const recs = recommend(
     {
       habits: buckets.habits,
       confidence: buckets.confidence,
       stability: buckets.stability,
-      access: (buckets as any).access, // if present in your scoring
-      knowledge: (buckets as any).knowledge, // if present in your scoring
+      access: (buckets as any).access,
+      knowledge: (buckets as any).knowledge
     },
     ["habits", "confidence", "stability", "access", "knowledge"],
     6
@@ -137,30 +138,32 @@ export default function PlanPage() {
       {/* Persona header */}
       <div className="bg-white rounded-2xl shadow p-4 border mb-5">
         <h2 className="text-xl font-semibold text-ink-900">{personaTitle}</h2>
-        <p className="text-sm mt-1">{personaSubtitle}</p>
+        <p className="mt-1 text-slate-700">{personaSubtitle}</p>
       </div>
 
-      <div className="mt-4 bg-white rounded-2xl border p-4 shadow-sm">
-        <h2 className="font-semibold">{L("About you", "Sobre ti")}</h2>
-        <p className="mt-2 text-slate-800">{personaAbout}</p>
+      <div className="mt-4 rounded-xl border p-4 bg-white/60">
+        <h3 className="font-semibold">
+          {locale === "en" ? "About this profile" : "Sobre este perfil"}
+        </h3>
+        <p className="mt-1 text-slate-700">{personaAbout}</p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4 mt-4">
-        <Card title={L("What to focus on next", "En qué enfocarte ahora")}>
-          <ul className="list-disc ml-5 space-y-1">
-            {personaFocus.map((line, i) => (
-              <li key={i}>{line}</li>
-            ))}
-          </ul>
-        </Card>
+      <div className="mt-4 rounded-xl border p-4 bg-white/60">
+        <h3 className="font-semibold">{locale === "en" ? "Focus areas" : "Áreas de enfoque"}</h3>
+        <ul className="mt-2 list-disc pl-5 space-y-1">
+          {focusList.map((it, i) => (
+            <li key={i}>{it}</li>
+          ))}
+        </ul>
+      </div>
 
-        <Card title={L("30-day starter plan", "Plan inicial de 30 días")}>
-          <ul className="list-disc ml-5 space-y-1">
-            {personaPlan.map((line, i) => (
-              <li key={i}>{line}</li>
-            ))}
-          </ul>
-        </Card>
+      <div className="mt-4 rounded-xl border p-4 bg-white/60">
+        <h3 className="font-semibold">{locale === "en" ? "Next 30 days" : "Próximos 30 días"}</h3>
+        <ol className="mt-2 list-decimal pl-5 space-y-1">
+          {plan30.map((it, i) => (
+            <li key={i}>{it}</li>
+          ))}
+        </ol>
       </div>
 
       {/* Persona-driven steps */}
@@ -191,7 +194,7 @@ export default function PlanPage() {
       </div>
 
       {/* Tailored resources */}
-      <h2 className="text-xl font-semibold mt-8 mb-3">{t(locale,"helpfulNext")}</h2>
+      <h2 className="text-xl font-semibold mt-8 mb-3">{t(locale, "helpfulNext")}</h2>
       <ul className="list-disc ml-6 space-y-2">
         {recs.map((r, i) =>
           r.href.startsWith("http") ? (
@@ -204,7 +207,10 @@ export default function PlanPage() {
 
       {/* Back to results */}
       <div className="mt-6">
-        <Link href={{ pathname: "/results", query: { a: JSON.stringify(ans) } }} className="px-4 py-2 rounded-xl border no-underline">
+        <Link
+          href={{ pathname: "/results", query: { a: JSON.stringify(payload ?? {}) } }}
+          className="px-4 py-2 rounded-xl border no-underline"
+        >
           {L("Back to results", "Volver a resultados")}
         </Link>
       </div>
@@ -212,11 +218,7 @@ export default function PlanPage() {
   );
 }
 
-function areaTitle(
-  locale: "en" | "es",
-  area: "habits" | "confidence" | "stability",
-  bucket: Bucket
-) {
+function areaTitle(locale: Locale, area: "habits" | "confidence" | "stability", bucket: Bucket) {
   const areaLabel =
     area === "habits"
       ? locale === "en" ? "Habits" : "Hábitos"
@@ -234,11 +236,7 @@ function areaTitle(
   return `${areaLabel} · ${badge[bucket]}`;
 }
 
-function stepsByArea(
-  locale: "en" | "es",
-  area: "habits" | "confidence" | "stability",
-  bucket: Bucket
-) {
+function stepsByArea(locale: Locale, area: "habits" | "confidence" | "stability", bucket: Bucket) {
   const L = (en: string, es: string) => (locale === "en" ? en : es);
   const groups: { title: string; items: string[] }[] = [];
 

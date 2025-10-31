@@ -15,7 +15,45 @@ export type PersonaKey = typeof PERSONA_KEYS[number];
 export type Localized<T> = { en: T; es: T };
 const L = <T extends string | string[]>(en: T, es: T): Localized<T> => ({ en, es });
 
-export function getPersona(bucket: BucketKey5): PersonaKey {
+type PersonaBuckets = {
+  habits: BucketKey5;
+  confidence: BucketKey5;
+  stability: BucketKey5;
+  access?: BucketKey5;
+  knowledge?: BucketKey5;
+};
+
+type PersonaInput = BucketKey5 | PersonaBuckets;
+
+const personaBucketRank: Record<BucketKey5, number> = {
+  building: 0,
+  getting_started: 1,
+  progress: 2,
+  on_track: 3,
+  empowered: 4,
+};
+
+function resolvePersonaBucket(input: PersonaInput): BucketKey5 {
+  if (typeof input === "string") {
+    return input;
+  }
+
+  const values = (Object.values(input) as (BucketKey5 | undefined)[]).filter(
+    (b): b is BucketKey5 => Boolean(b)
+  );
+
+  if (values.length === 0) {
+    return "building";
+  }
+
+  return values.reduce((weakest, current) => (
+    personaBucketRank[current] < personaBucketRank[weakest] ? current : weakest
+  ));
+}
+
+export function getPersona(input: PersonaInput): PersonaKey {
+  const bucket = resolvePersonaBucket(input);
+
   switch (bucket) {
     case "building":
       return "rebuilder";
