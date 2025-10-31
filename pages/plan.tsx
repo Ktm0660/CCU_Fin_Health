@@ -1,41 +1,74 @@
-import { useRouter } from "next/router";
-import { useMemo } from "react";
+import { useMemo } from 'react';
+import { useRouter } from 'next/router';
 
-import { scoreAnswers } from "@/data/assessment";
-import { questionsBase, bucketize5, type BucketKey5 } from "@/data/assessment";
-import { pickLessons, Area, Level } from "@/data/lessons";
-import { personaCopy, getPersona, type PersonaKey } from "@/data/personas";
-import { recommend, type Locale } from "@/data/recommendations";
-import LessonCard from "@/components/LessonCard";
-import Link from "next/link";
-import { t } from "@/lib/i18n";
-import { loadAnswers } from "@/lib/state";
+import { detectLocale, t } from '@/lib/locale';
+import { loadAnswers } from '@/lib/state';
+import { scoreAnswers, questionsBase } from '@/data/assessment';
+import { pickPersona, personaCopy, pick, type AreaKey, type Bucket } from '@/data/personas';
+import { recommend, type BucketsArg } from '@/data/recommendations';
 
-type Localized<T> = { en: T; es: T };
-const pick = <T,>(loc: Locale, v: Localized<T>): T => v[loc];
+type Buck = Bucket;
 type Score = ReturnType<typeof scoreAnswers>;
 
-const bucketRank: Record<BucketKey5, number> = {
-  getting_started: 0,
-  building: 1,
-  progress: 2,
-  on_track: 3,
-  empowered: 4,
+type BucketsLike = Record<AreaKey, Buck>;
+
+type ScoreShape = {
+  habits?: number;
+  maxHabits?: number;
+  confidence?: number;
+  maxConfidence?: number;
+  stability?: number;
+  maxStability?: number;
+  access?: number;
+  maxAccess?: number;
+  trust?: number;
+  maxTrust?: number;
+  resilience?: number;
+  maxResilience?: number;
+  byPillar?: Partial<Record<'habits' | 'confidence' | 'stability' | 'trust' | 'access' | 'resilience', number>>;
+  maxByPillar?: Partial<Record<'habits' | 'confidence' | 'stability' | 'trust' | 'access' | 'resilience', number>>;
 };
 
-type Bucket = BucketKey5;
+function toBucketsFromScores(score: ScoreShape): BucketsArg {
+  // Expect s like {habits:number, maxHabits:number, ...}. Fall back safely.
+  const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, n));
+  const make = (val: number, max: number): Buck => {
+    if (max <= 0 || Number.isNaN(val)) return 'getting_started';
+    const pct = clamp(val / max, 0, 1);
+    if (pct < 0.25) return 'getting_started';
+    if (pct < 0.5) return 'building';
+    if (pct < 0.75) return 'progress';
+    if (pct < 0.95) return 'on_track';
+    return 'empowered';
+  };
 
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="bg-white rounded-2xl shadow p-4 border">
-      <h3 className="font-semibold text-ink-900">{title}</h3>
-      <div className="mt-2 text-sm">{children}</div>
-    </div>
+  const habitsVal = Number(score.habits ?? score.byPillar?.habits ?? 0);
+  const habitsMax = Number(score.maxHabits ?? score.maxByPillar?.habits ?? 0);
+  const confidenceVal = Number(score.confidence ?? score.byPillar?.confidence ?? 0);
+  const confidenceMax = Number(score.maxConfidence ?? score.maxByPillar?.confidence ?? 0);
+  const stabilityVal = Number(score.stability ?? score.byPillar?.stability ?? 0);
+  const stabilityMax = Number(score.maxStability ?? score.maxByPillar?.stability ?? 0);
+  const accessVal = Number(
+    score.access ?? score.trust ?? score.byPillar?.access ?? score.byPillar?.trust ?? 0
   );
+  const accessMax = Number(
+    score.maxAccess ?? score.maxTrust ?? score.maxByPillar?.access ?? score.maxByPillar?.trust ?? 0
+  );
+  const resilienceVal = Number(score.resilience ?? score.byPillar?.resilience ?? 0);
+  const resilienceMax = Number(score.maxResilience ?? score.maxByPillar?.resilience ?? 0);
+
+  return {
+    habits: make(habitsVal, habitsMax),
+    confidence: make(confidenceVal, confidenceMax),
+    stability: make(stabilityVal, stabilityMax),
+    access: make(accessVal, accessMax),
+    resilience: make(resilienceVal, resilienceMax),
+  };
 }
 
-export default function PlanPage() {
+export default function PlanPage(props: any) {
   const router = useRouter();
+  const locale = detectLocale(router.asPath, router.locale);
 
   const payload = useMemo(() => {
     try {
@@ -46,337 +79,96 @@ export default function PlanPage() {
     }
   }, [router.query.a]);
 
-  const score = useMemo<Score>(() => {
-    if (payload && typeof payload === "object" && "byPillar" in payload && "maxByPillar" in payload) {
+  const baseScore = useMemo<Score>(() => {
+    if (payload && typeof payload === 'object' && 'byPillar' in (payload as any) && 'maxByPillar' in (payload as any)) {
       return payload as Score;
     }
 
     const answers: Record<string, number> =
-      payload && typeof payload === "object" && "answers" in payload
+      payload && typeof payload === 'object' && 'answers' in (payload as any)
         ? ((payload as { answers?: Record<string, number> }).answers ?? {})
         : ((payload as Record<string, number>) ?? {});
 
     return scoreAnswers(questionsBase, answers);
   }, [payload]);
 
-  const locale = ((router.query.lang as string) || "en") as Locale;
+  const providedScore = (props as any)?.score as ScoreShape | undefined;
+  const providedBuckets = (props as any)?.buckets as BucketsLike | undefined;
 
-  const ratio = (value: unknown, max: unknown) => {
-    const v = typeof value === "number" ? value : 0;
-    const m = typeof max === "number" ? max : 0;
-    return m > 0 ? v / m : 0;
-  };
+  const buckets: BucketsArg = providedBuckets ?? toBucketsFromScores(providedScore ?? baseScore);
 
-  // Build 5-pillar buckets for persona + recommendations.
-  const buckets = (() => {
-    const accessValue = (score.byPillar as Record<string, number | undefined>).access ?? score.byPillar.trust;
-    const accessMax = (score.maxByPillar as Record<string, number | undefined>).access ?? score.maxByPillar.trust;
-
-    const hVal = ratio(score.byPillar.habits, score.maxByPillar.habits);
-    const cVal = ratio(score.byPillar.confidence, score.maxByPillar.confidence);
-    const stVal = ratio(score.byPillar.stability, score.maxByPillar.stability);
-    const aVal = ratio(accessValue, accessMax);
-
-    const resilienceHasData =
-      typeof score.maxByPillar.resilience === "number" && score.maxByPillar.resilience > 0;
-    const rVal = resilienceHasData
-      ? ratio(score.byPillar.resilience, score.maxByPillar.resilience)
-      : stVal;
-
-    const habits = bucketize5(typeof hVal === "number" ? hVal : 0);
-    const confidence = bucketize5(typeof cVal === "number" ? cVal : 0);
-    const stability = bucketize5(typeof stVal === "number" ? stVal : 0);
-    const access = bucketize5(typeof aVal === "number" ? aVal : 0);
-    const resilience = bucketize5(typeof rVal === "number" ? rVal : 0);
-
-    const buckets: Record<
-      "habits" | "confidence" | "stability" | "access" | "resilience",
-      BucketKey5
-    > = {
-      habits,
-      confidence,
-      stability,
-      access,
-      resilience,
-    };
-
-    return buckets;
-  })();
-
-  // Persona engine
-  const persona = getPersona(buckets);
+  const persona = pickPersona(buckets);
   const P = personaCopy[persona];
 
-  const personaTitle = pick(locale, P.title);
-  const personaSubtitle = pick(locale, P.subtitle);
-  const personaAbout = pick(locale, P.about);
-  const focusList = pick(locale, P.focus);
-  const plan30 = pick(locale, P.plan30day);
+  const title = `${P.icon} ${pick(locale, P.title)}`;
+  const subtitle = pick(locale, P.subtitle);
+  const about = pick(locale, P.about);
+  const focus = pick(locale, P.focus);
+  const plan30 = pick(locale, P.plan30);
 
-  const priorityAreas = ["habits", "confidence", "stability"] as const;
-  type FocusArea = (typeof priorityAreas)[number];
-  const ordered = [...priorityAreas].sort((a, b) => bucketRank[buckets[a]] - bucketRank[buckets[b]]) as FocusArea[];
-  const primary = ordered[0] ?? "habits";
-  const secondary = ordered[1] ?? "confidence";
-
-  // Map persona to a starting lesson level
-  // Rank level to start recommendations per persona
-  const personaLevelMap: Record<PersonaKey, Level> = {
-    rebuilder: "discover",
-    starter: "stabilize",
-    progress: "grow",
-    on_track: "grow",
-    empowered: "thrive",
-  };
-  const startLevel = personaLevelMap[persona];
-
-  // Pick lessons for primary focus area
-  const recLessons = pickLessons(primary as Area, startLevel, locale, 3);
-
-  const recs = recommend(
-    {
-      habits: buckets.habits,
-      confidence: buckets.confidence,
-      stability: buckets.stability,
-      access: buckets.access,
-      resilience: buckets.resilience,
-    },
-    locale,
-    { limit: 6 }
-  );
-
-  const L = (en: string, es: string) => (locale === "en" ? en : es);
+  const recs = recommend(buckets, locale, { limit: 3, includeDims: ['habits', 'stability', 'confidence'] });
 
   return (
-    <section>
-      <h1 className="text-2xl font-semibold text-ink-900 mb-2">
-        {L("Your Action Path", "Tu ruta de acción")}
-      </h1>
-      <p className="text-sm text-slate-700 mb-4">
-        {L(
-          "Judgment-free, practical steps. Start where it’s easiest—small wins reduce stress and build momentum.",
-          "Pasos prácticos y sin juicios. Empieza por lo más fácil—los logros pequeños bajan el estrés y crean impulso."
-        )}
-      </p>
+    <div className="pb-16">
+      {/* Friendly intro */}
+      <section className="mt-6 rounded-xl bg-emerald-50 border border-emerald-100 p-4">
+        <h1 className="text-xl font-semibold text-slate-900">
+          {t('Your Financial Health Snapshot', 'Tu panorama financiero', locale)}
+        </h1>
+        <p className="text-slate-700">
+          {t(
+            'This is a friendly snapshot of where you’re strong and where small changes could help most.',
+            'Un panorama amable de tus fortalezas y dónde pequeños cambios ayudarán más.',
+            locale
+          )}
+        </p>
+      </section>
 
-      {/* Persona header */}
-      <div className="bg-white rounded-2xl shadow p-4 border mb-5">
-        <h2 className="text-xl font-semibold text-ink-900">{personaTitle}</h2>
-        <p className="mt-1 text-slate-700">{personaSubtitle}</p>
-      </div>
+      {/* Keep your existing score bars below this comment (do not remove) */}
 
-      <div className="mt-4 rounded-xl border p-4 bg-white/60">
-        <h3 className="font-semibold">
-          {locale === "en" ? "About this profile" : "Sobre este perfil"}
-        </h3>
-        <p className="mt-1 text-slate-700">{personaAbout}</p>
-      </div>
+      {/* New: Profile card */}
+      <section className="mt-6 rounded-xl border bg-white p-4">
+        <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
+        <p className="text-slate-700">{subtitle}</p>
+        <p className="mt-2 text-slate-700">{about}</p>
 
-      <div className="mt-4 rounded-xl border p-4 bg-white/60">
-        <h3 className="font-semibold">{locale === "en" ? "Focus areas" : "Áreas de enfoque"}</h3>
-        <ul className="mt-2 list-disc pl-5 space-y-1">
-          {focusList.map((it, i) => (
-            <li key={i}>{it}</li>
-          ))}
-        </ul>
-      </div>
+        <div className="mt-4">
+          <h3 className="font-medium text-slate-900">
+            {t('Primary focus areas', 'Áreas de enfoque principales', locale)}
+          </h3>
+          <ul className="mt-1 list-disc pl-5 text-slate-700">
+            {focus.map((f) => <li key={f}>{f}</li>)}
+          </ul>
+        </div>
 
-      <div className="mt-4 rounded-xl border p-4 bg-white/60">
-        <h3 className="font-semibold">{locale === "en" ? "Next 30 days" : "Próximos 30 días"}</h3>
-        <ol className="mt-2 list-decimal pl-5 space-y-1">
-          {plan30.map((it, i) => (
-            <li key={i}>{it}</li>
-          ))}
-        </ol>
-      </div>
+        <div className="mt-4">
+          <h3 className="font-medium text-slate-900">
+            {t('First 30 days', 'Primeros 30 días', locale)}
+          </h3>
+          <ul className="mt-1 list-disc pl-5 text-slate-700">
+            {plan30.map((f) => <li key={f}>{f}</li>)}
+          </ul>
+        </div>
 
-      {/* Persona-driven steps */}
-      <div className="grid md:grid-cols-2 gap-4 mt-4">
-        <Card title={areaTitle(locale, primary, buckets[primary] as Bucket)}>
-          {stepsByArea(locale, primary, buckets[primary] as Bucket)}
-        </Card>
-
-        <Card title={areaTitle(locale, secondary, buckets[secondary] as Bucket)}>
-          {stepsByArea(locale, secondary, buckets[secondary] as Bucket)}
-        </Card>
-      </div>
-
-      {/* NEW: Recommended lessons inside the Action Path */}
-      <h2 className="text-xl font-semibold mt-8 mb-3">
-        {L("Recommended lessons for you", "Lecciones recomendadas para ti")}
-      </h2>
-      <p className="text-sm text-slate-700 mb-3">
-        {L(
-          "Short, plain-language lessons matched to your current focus.",
-          "Lecciones cortas y claras según tu enfoque actual."
-        )}
-      </p>
-      <div className="grid md:grid-cols-3 gap-4">
-        {recLessons.map(lsn => (
-          <LessonCard key={lsn.id} lesson={lsn} locale={locale} />
-        ))}
-      </div>
-
-      {/* Tailored resources */}
-      <h2 className="text-xl font-semibold mt-8 mb-3">{t(locale, "helpfulNext")}</h2>
-      <ul className="list-disc ml-6 space-y-2">
-        {recs.map((r, i) =>
-          r.href.startsWith("http") ? (
-            <li key={i}><a className="no-underline" href={r.href} target="_blank" rel="noreferrer">{r.title}</a></li>
-          ) : (
-            <li key={i}><Link className="no-underline" href={r.href}>{r.title}</Link></li>
-          )
-        )}
-      </ul>
-
-      {/* Back to results */}
-      <div className="mt-6">
-        <Link
-          href={{ pathname: "/results", query: { a: JSON.stringify(payload ?? {}) } }}
-          className="px-4 py-2 rounded-xl border no-underline"
-        >
-          {L("Back to results", "Volver a resultados")}
-        </Link>
-      </div>
-    </section>
-  );
-}
-
-function areaTitle(locale: Locale, area: "habits" | "confidence" | "stability", bucket: Bucket) {
-  const areaLabel =
-    area === "habits"
-      ? locale === "en" ? "Habits" : "Hábitos"
-      : area === "confidence"
-      ? locale === "en" ? "Confidence" : "Confianza"
-      : locale === "en" ? "Stability" : "Estabilidad";
-
-  const badge: Record<Bucket, string> = {
-    building: locale === "en" ? "Building" : "Construyendo",
-    getting_started: locale === "en" ? "Getting Started" : "Empezando",
-    progress: locale === "en" ? "Making Progress" : "Tomando ritmo",
-    on_track: locale === "en" ? "On Track" : "En buen camino",
-    empowered: locale === "en" ? "Empowered" : "Con control",
-  };
-  return `${areaLabel} · ${badge[bucket]}`;
-}
-
-function stepsByArea(locale: Locale, area: "habits" | "confidence" | "stability", bucket: Bucket) {
-  const L = (en: string, es: string) => (locale === "en" ? en : es);
-  const groups: { title: string; items: string[] }[] = [];
-
-  if (area === "stability") {
-    if (bucket === "building" || bucket === "getting_started") {
-      groups.push({
-        title: L("This week", "Esta semana"),
-        items: [
-          L("Open a separate ‘rainy day’ space (even $10).", "Abre un espacio de ahorro (aunque sea $10)."),
-          L("Set one small automatic transfer to savings.", "Activa una transferencia automática pequeña."),
-        ],
-      });
-      groups.push({
-        title: L("Next few months", "Próximos meses"),
-        items: [
-          L("Build a $100–$300 mini emergency fund.", "Crea un fondo de emergencia de $100–$300."),
-          L("Plan for repairs with tiny monthly set-asides.", "Planifica reparaciones con apartados pequeños."),
-        ],
-      });
-    } else if (bucket === "progress" || bucket === "on_track") {
-      groups.push({
-        title: L("This week", "Esta semana"),
-        items: [
-          L("Name savings goals (emergency, car, move).", "Nombra metas de ahorro (emergencia, auto, mudanza)."),
-        ],
-      });
-      groups.push({
-        title: L("Next few months", "Próximos meses"),
-        items: [
-          L("Increase autosave when income rises.", "Aumenta el ahorro cuando suba el ingreso."),
-        ],
-      });
-    } else {
-      groups.push({
-        title: L("Keep growing", "Sigue creciendo"),
-        items: [
-          L("Build a 3–6 month buffer; use goal-based sub-accounts.", "Crea un colchón de 3–6 meses; usa subcuentas por meta."),
-        ],
-      });
-    }
-  }
-
-  if (area === "habits") {
-    if (bucket === "building" || bucket === "getting_started") {
-      groups.push({
-        title: L("This week", "Esta semana"),
-        items: [
-          L("Use a 1-page spending list: Needs → Bills → Wants.", "Usa una lista de 1 página: Necesidades → Cuentas → Gustos."),
-          L("Set one bill to autopay (minimum).", "Activa pago automático en una cuenta (mínimo)."),
-        ],
-      });
-      groups.push({
-        title: L("Next few months", "Próximos meses"),
-        items: [
-          L("Plan groceries to cut impulse buys.", "Planifica el súper para reducir impulsos."),
-        ],
-      });
-    } else if (bucket === "progress" || bucket === "on_track") {
-      groups.push({
-        title: L("This week", "Esta semana"),
-        items: [L("Turn on balance and large-purchase alerts.", "Activa alertas de saldo y compras grandes.")],
-      });
-      groups.push({
-        title: L("Next few months", "Próximos meses"),
-        items: [L("Schedule a monthly 15-minute money check-in.", "Agenda una revisión mensual de 15 minutos.")],
-      });
-    } else {
-      groups.push({
-        title: L("Keep growing", "Sigue creciendo"),
-        items: [L("Optimize recurring expenses once per quarter.", "Optimiza gastos recurrentes cada trimestre.")],
-      });
-    }
-  }
-
-  if (area === "confidence") {
-    if (bucket === "building" || bucket === "getting_started") {
-      groups.push({
-        title: L("This week", "Esta semana"),
-        items: [
-          L("Write 3 questions to ask a counselor.", "Escribe 3 preguntas para un consejero."),
-          L("Pull your free credit report.", "Descarga tu reporte de crédito gratis."),
-        ],
-      });
-      groups.push({
-        title: L("Next few months", "Próximos meses"),
-        items: [L("Compare two loan offers side-by-side when needed.", "Compara dos ofertas de préstamo cuando lo necesites.")],
-      });
-    } else if (bucket === "progress" || bucket === "on_track") {
-      groups.push({
-        title: L("This week", "Esta semana"),
-        items: [L("Practice your ‘money story’—how you explain your goals.", "Practica tu ‘historia de dinero’—cómo explicas tus metas.")],
-      });
-      groups.push({
-        title: L("Next few months", "Próximos meses"),
-        items: [L("Attend a workshop or 1:1 session.", "Asiste a un taller o sesión 1:1.")],
-      });
-    } else {
-      groups.push({
-        title: L("Keep growing", "Sigue creciendo"),
-        items: [L("Mentor someone or share what’s worked.", "Mentorea a alguien o comparte lo que te funcionó.")],
-      });
-    }
-  }
-
-  return (
-    <div className="space-y-3">
-      {groups.map((g, i) => (
-        <div key={i}>
-          <p className="font-medium text-ink-900">{g.title}</p>
-          <ul className="list-disc ml-5 mt-1 space-y-1">
-            {g.items.map((it, j) => (
-              <li key={j}>{it}</li>
+        <div className="mt-4">
+          <h3 className="font-medium text-slate-900">
+            {t('What to do next', 'Qué hacer ahora', locale)}
+          </h3>
+          <ul className="mt-1 list-disc pl-5 text-slate-700">
+            {recs.map((r) => (
+              <li key={r.id}>
+                {r.href ? (
+                  <a href={r.href} className="hover:underline" target={r.href.startsWith('http') ? '_blank' : undefined} rel={r.href.startsWith('http') ? 'noreferrer' : undefined}>
+                    {r.title}
+                  </a>
+                ) : (
+                  r.title
+                )}
+              </li>
             ))}
           </ul>
         </div>
-      ))}
+      </section>
     </div>
   );
 }
