@@ -1,8 +1,10 @@
-import { type Locale } from '@/lib/locale';
+import { type Locale, t } from '@/lib/locale';
 
 export type AreaKey = 'habits' | 'confidence' | 'stability' | 'access' | 'resilience';
 export type Bucket = 'getting_started' | 'building' | 'progress' | 'on_track' | 'empowered';
 export type PersonaKey = 'rebuilder' | 'starter' | 'steadier' | 'planner' | 'navigator';
+// Export a Pillar alias so other modules can import a stable name.
+export type Pillar = AreaKey;
 
 type Localized<T> = { en: T; es: T };
 
