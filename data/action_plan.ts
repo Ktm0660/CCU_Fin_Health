@@ -2,7 +2,8 @@
  * Generates a friendly, localized 30-day starter plan based on persona + weakest pillar.
  * Export: build30DayPlan(persona, primaryPillar, locale)
  */
-import type { Locale, Pillar } from "./personas";
+import type { Locale } from '@/lib/locale';
+import type { Pillar } from './personas';
 
 export function build30DayPlan(persona: string, primary: Pillar, locale: Locale) {
   const L = (en: string, es: string) => (locale === "es" ? es : en);
