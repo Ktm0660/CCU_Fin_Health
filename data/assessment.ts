@@ -1,4 +1,22 @@
 /* Five-pillar assessment: Habits, Confidence, Stability, Trust & Access, Resilience */
+export const BUCKETS5 = [
+  "building",
+  "getting_started",
+  "progress",
+  "on_track",
+  "empowered",
+] as const;
+
+export type BucketKey5 = typeof BUCKETS5[number];
+
+export const rankOrder5: Record<BucketKey5, number> = {
+  building: 1,
+  getting_started: 2,
+  progress: 3,
+  on_track: 4,
+  empowered: 5,
+};
+
 export type Pillar = "habits" | "confidence" | "stability" | "trust" | "resilience";
 
 export type Option = {
@@ -360,12 +378,12 @@ export function normalize0to100(value: number, max: number) {
 }
 
 // Backwards-compat exports some pages might expect:
-export type BucketKey5 = "thriving" | "building" | "vulnerable" | "at_risk";
 export function bucketize5(pct: number): BucketKey5 {
-  if (pct >= 80) return "thriving";
-  if (pct >= 50) return "building";
-  if (pct >= 20) return "vulnerable";
-  return "at_risk";
+  if (pct >= 0.8) return "empowered";
+  if (pct >= 0.6) return "on_track";
+  if (pct >= 0.4) return "progress";
+  if (pct >= 0.2) return "getting_started";
+  return "building";
 }
 
 // ---------- Legacy compatibility aliases (for older modules) ----------

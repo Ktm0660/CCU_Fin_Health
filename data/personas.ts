@@ -13,13 +13,14 @@ const L = <T extends string | string[]>(en: T, es: T): Localized<T> => ({ en, es
 
 export function getPersona(bucket: BucketKey5): PersonaKey {
   switch (bucket) {
-    case "at_risk":
-      return "rebuilder";
-    case "vulnerable":
-      return "stabilizer";
     case "building":
+      return "rebuilder";
+    case "getting_started":
+      return "stabilizer";
+    case "progress":
       return "builder";
-    case "thriving":
+    case "on_track":
+    case "empowered":
       return "optimizer";
     default:
       return "rebuilder";

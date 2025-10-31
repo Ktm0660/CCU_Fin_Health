@@ -42,10 +42,11 @@ const CATALOG: RecCatalog = {
 
 /** Rank helper for choosing weakest/strongest dims and bucket tone. */
 const rank: Record<BucketKey5, number> = {
-  at_risk: 1,
-  vulnerable: 2,
-  building: 3,
-  thriving: 4,
+  building: 1,
+  getting_started: 2,
+  progress: 3,
+  on_track: 4,
+  empowered: 5,
 };
 
 export type DimKey = keyof RecCatalog;
@@ -54,7 +55,7 @@ export type DimKey = keyof RecCatalog;
  * Recommend items based on:
  * - primary: weakest dimension first (give 2 items)
  * - secondary: second-weakest dimension (give 1 item)
- * - bucket: if at_risk/vulnerable, prefer "tool"/"product" with immediate help; if thriving, add “edu” depth
+ * - bucket: if building/getting_started, prefer "tool"/"product" with immediate help; if empowered, add “edu” depth
  */
 export function recommend(
   dimsSortedWeakToStrong: DimKey[],
@@ -65,7 +66,7 @@ export function recommend(
   const primary = dims[0] ?? "habits";
   const secondary = dims[1] ?? "stability";
 
-  const preferImmediate = rank[bucket] <= 2; // at_risk or vulnerable
+  const preferImmediate = rank[bucket] <= 2; // building or getting_started
   const pick = (dim: DimKey, n: number) => {
     const pool = CATALOG[dim];
     if (!pool) return [];
