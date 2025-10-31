@@ -1,16 +1,36 @@
+/**
+ * Bilingual, pillar-aware catalog + ranker.
+ * Exports:
+ *   - recommend(buckets, locale, opts?)
+ * Types:
+ *   - BucketKey5 (same keys as elsewhere)
+ */
 import type { BucketKey5 } from "./assessment";
 
-/** Lightweight catalog for tailored suggestions. */
-export type RecItem = { title: string; href: string; kind: "tool" | "edu" | "product" };
+export type Locale = "en" | "es";
+export type Pillar = "habits" | "confidence" | "stability" | "access" | "resilience";
 
-/** Areas we recommend against (tie to assessment dimensions). */
-export type RecArea = "habits" | "confidence" | "stability" | "access" | "knowledge";
+export type RecItem = {
+  id: string;
+  kind: "tool" | "edu" | "product";
+  dims: Pillar[];                  // which pillars this helps
+  title: { en: string; es: string };
+  blurb: { en: string; es: string };
+  href: string;                    // internal route or external link
+  effort: "micro" | "low" | "med" | "high";
+  cost?: "free" | "$" | "$$";
+  eligibility?: {
+    creditPull?: boolean;
+    accountRequired?: boolean;
+    branchVisit?: boolean;
+    language?: ("en" | "es")[];
+  };
+};
 
-/** What we currently have content for. Add/remove as you expand. */
-export type RecCatalog = Record<RecArea, RecItem[]>;
+export type BucketsArg = Record<Pillar, BucketKey5>;
 
-/** Rank order for buckets (lower = needs more help) */
-const rank: Record<BucketKey5, number> = {
+// Lower number = weaker → higher priority
+const rankOrder: Record<BucketKey5, number> = {
   building: 1,
   getting_started: 2,
   progress: 3,
@@ -18,87 +38,232 @@ const rank: Record<BucketKey5, number> = {
   empowered: 5,
 };
 
-/** Minimal starter catalog — merge in your existing items here */
-const catalog: RecCatalog = {
-  habits: [
-    { title: "Build a Starter Emergency Fund ($500)", href: "/lessons/emergency-fund", kind: "edu" },
-    { title: "Bill Calendar Template", href: "/tools/bill-calendar", kind: "tool" },
-    { title: "5-minute Spend Plan (Printable)", href: "/resources/spend-plan", kind: "tool" },
-    { title: "Auto-Pay + Bill Calendar", href: "/resources/bill-calendar", kind: "tool" },
-    { title: "Needs vs Wants (Quick Guide)", href: "/lessons/needs-vs-wants", kind: "edu" },
-  ],
-  confidence: [
-    { title: "Money Mindset Reset", href: "/lessons/mindset", kind: "edu" },
-    { title: "Coach Session (Free)", href: "/tools/coach", kind: "product" },
-    { title: "Talk to a CU without Fear (Script + Tips)", href: "/lessons/judgment-free", kind: "edu" },
-    { title: "Fee Glossary in Plain English/Spanish", href: "/glossary", kind: "edu" },
-    { title: "Open an Account (Step-by-Step)", href: "/products/open-account", kind: "product" },
-  ],
-  stability: [
-    { title: "Debt Priority Planner", href: "/tools/debt-planner", kind: "tool" },
-    { title: "Income Smoothing Ideas", href: "/lessons/income-smoothing", kind: "edu" },
-    { title: "Mini Emergency Fund Sprint", href: "/lessons/mini-emergency-fund", kind: "edu" },
-    { title: "Round-Up Savings Setup", href: "/tools/round-up", kind: "tool" },
-    { title: "Debt Snowball vs Avalanche", href: "/lessons/debt-strategies", kind: "edu" },
-  ],
-  access: [
-    { title: "Fraud-Safe Checking", href: "/products/checking", kind: "product" },
-    { title: "ITIN-Friendly Services", href: "/resources/itin", kind: "product" },
-    { title: "ITIN Lending at Connections", href: "/products/itin-lending", kind: "product" },
-    { title: "Mobile Branch Schedule", href: "/resources/mobile-branch", kind: "tool" },
-    { title: "How Fees Work (Transparent Examples)", href: "/lessons/fees-explained", kind: "edu" },
-  ],
-  knowledge: [
-    { title: "Jargon-Free Glossary", href: "/glossary", kind: "edu" },
-    { title: "Credit Score Basics", href: "/lessons/credit-basics", kind: "edu" },
-    { title: "One-Page Money Map", href: "/tools/money-map", kind: "tool" },
-    { title: "Sinking Funds (Car, Medical, Holidays)", href: "/lessons/sinking-funds", kind: "edu" },
-    { title: "Goal Tracker", href: "/tools/goal-tracker", kind: "tool" },
-  ],
-};
+const catalog: RecItem[] = [
+  {
+    id: "habit-jars",
+    kind: "tool",
+    dims: ["habits"],
+    title: {
+      en: "Bill-Calendar & Habit Jars",
+      es: "Calendario de Pagos y ‘Jarras’ de Hábitos",
+    },
+    blurb: {
+      en: "A five-minute weekly planner that pairs due-dates with tiny, repeatable money habits.",
+      es: "Un planificador semanal de cinco minutos que combina fechas de pago con micro-hábitos financieros.",
+    },
+    href: "/tools/habit-jars",
+    effort: "micro",
+    cost: "free",
+  },
+  {
+    id: "confidence-coach",
+    kind: "tool",
+    dims: ["confidence"],
+    title: { en: "Friendly Finance Coach", es: "Asesor Financiero Amigable" },
+    blurb: {
+      en: "Scripted, judgment-free check-ins and templates for tough calls (like talking to a lender or landlord).",
+      es: "Acompañamiento sin juicios y guiones útiles para conversaciones difíciles (con prestamistas o propietarios).",
+    },
+    href: "/coach",
+    effort: "low",
+    cost: "free",
+  },
+  {
+    id: "stability-buffer",
+    kind: "product",
+    dims: ["stability"],
+    title: { en: "Rainy-Day Share (Goal Sub-Account)", es: "Ahorro de Emergencia (Subcuenta Objetivo)" },
+    blurb: {
+      en: "Name your goal, set auto-transfers, and watch a safety cushion grow.",
+      es: "Nombra tu meta, activa transferencias automáticas y crea tu colchón de seguridad.",
+    },
+    href: "/products/goal-saver",
+    effort: "low",
+    eligibility: { accountRequired: true, language: ["en", "es"] },
+  },
+  {
+    id: "access-itin",
+    kind: "product",
+    dims: ["access"],
+    title: { en: "ITIN-Friendly Checking", es: "Cuenta de Cheques Apta para ITIN" },
+    blurb: {
+      en: "No SSN required. Human support to get started and avoid common fees.",
+      es: "Sin necesidad de SSN. Apoyo humano para empezar y evitar cargos comunes.",
+    },
+    href: "/products/checking-itin",
+    effort: "low",
+    cost: "$",
+    eligibility: { accountRequired: true, language: ["en", "es"] },
+  },
+  {
+    id: "resilience-credit-builder",
+    kind: "product",
+    dims: ["resilience"],
+    title: { en: "Credit Builder Loan", es: "Préstamo para Construir Crédito" },
+    blurb: {
+      en: "Small fixed payments reported to bureaus. Builds payment history safely.",
+      es: "Pagos fijos pequeños reportados a burós. Construye historial de pagos con seguridad.",
+    },
+    href: "/products/credit-builder",
+    effort: "med",
+    cost: "$",
+    eligibility: { creditPull: true, accountRequired: true },
+  },
+  {
+    id: "edu-budget-101",
+    kind: "edu",
+    dims: ["habits", "stability"],
+    title: { en: "Budgeting 101 (FiCEP-aligned)", es: "Presupuesto 101 (alineado a FiCEP)" },
+    blurb: {
+      en: "Short lessons + worksheet bundle mapped to FiCEP: tracking, categorizing, and adjusting.",
+      es: "Lecciones cortas + plantillas según FiCEP: registro, categorías y ajustes.",
+    },
+    href: "/learn/budget-101",
+    effort: "low",
+    cost: "free",
+  },
+  {
+    id: "edu-debt-options",
+    kind: "edu",
+    dims: ["stability", "resilience"],
+    title: { en: "Debt Options, Decoded", es: "Opciones de Deuda, al Detalle" },
+    blurb: {
+      en: "Snowball vs. avalanche, consolidation, hardship—when each path makes sense.",
+      es: "‘Bola de nieve’ vs. ‘Avalancha’, consolidación, dificultad—cuándo conviene cada camino.",
+    },
+    href: "/learn/debt-options",
+    effort: "low",
+    cost: "free",
+  },
+  {
+    id: "access-banker-hours",
+    kind: "tool",
+    dims: ["access", "confidence"],
+    title: { en: "Ask-a-Banker (Asynchronous)", es: "Pregunta a un Banquero (Asíncrono)" },
+    blurb: {
+      en: "Send a question anytime and get a response by the next business day.",
+      es: "Envía tu pregunta en cualquier momento y recibe respuesta el siguiente día hábil.",
+    },
+    href: "/tools/ask-banker",
+    effort: "micro",
+    cost: "free",
+  },
+  {
+    id: "resilience-scam-shield",
+    kind: "edu",
+    dims: ["resilience"],
+    title: { en: "Scam Shield Mini-Course", es: "Mini-Curso: Escudo contra Estafas" },
+    blurb: {
+      en: "Spot red flags in texts, calls, and wires. Practice with real examples.",
+      es: "Detecta señales de alerta en mensajes, llamadas y transferencias. Practica con casos reales.",
+    },
+    href: "/learn/scam-shield",
+    effort: "low",
+    cost: "free",
+  },
+];
 
-/** Allow passing either:
- *  A) the user's bucket-by-area map, e.g. { habits: "getting_started", confidence: "progress", ... }
- *  B) just a prioritized list of areas to show
- */
-type BucketsByArea = Partial<Record<RecArea, BucketKey5>>;
+function priorityFor(p: Pillar, buckets: BucketsArg) {
+  // Lower bucket rank -> higher priority
+  return rankOrder[buckets[p]];
+}
 
-function sortAreasByNeed(buckets?: BucketsByArea, focus?: RecArea[]): RecArea[] {
-  const areas: RecArea[] = (focus && focus.length ? focus : (Object.keys(catalog) as RecArea[]))
-    .filter(a => a in catalog);
+function sortByImpact(buckets: BucketsArg, items: RecItem[]) {
+  return [...items].sort((a, b) => {
+    // Compare by worst pillar each item targets
+    const aMin = Math.min(...a.dims.map((d) => priorityFor(d, buckets)));
+    const bMin = Math.min(...b.dims.map((d) => priorityFor(d, buckets)));
+    if (aMin !== bMin) return aMin - bMin;
 
-  if (!buckets) return areas; // no scoring context — keep incoming order
+    // Then prefer micro/low effort first for momentum
+    const effortRank = { micro: 1, low: 2, med: 3, high: 4 } as const;
+    const aE = effortRank[a.effort];
+    const bE = effortRank[b.effort];
+    if (aE !== bE) return aE - bE;
 
-  return areas.sort((a, b) => {
-    const ra = rank[buckets[a] ?? "progress"];
-    const rb = rank[buckets[b] ?? "progress"];
-    return ra - rb; // weakest first
+    // Then prefer free/low-cost
+    const costRank = { free: 1, $: 2, $$: 3 } as const;
+    const aC = a.cost ? costRank[a.cost] : 2;
+    const bC = b.cost ? costRank[b.cost] : 2;
+    return aC - bC;
   });
 }
 
-/** Get up to `max` recommended items, ordered by need then catalog order. */
 export function recommend(
-  first: BucketsByArea | RecArea[],
-  second?: RecArea[],
-  max = 6
-): RecItem[] {
-  let buckets: BucketsByArea | undefined;
-  let focus: RecArea[] | undefined;
-
-  if (Array.isArray(first)) {
-    focus = first as RecArea[];
-  } else {
-    buckets = first as BucketsByArea;
-    focus = second;
+  buckets: BucketsArg,
+  locale: Locale,
+  opts?: { limit?: number; includeDims?: Pillar[] }
+);
+export function recommend(
+  legacyBuckets: Partial<Record<string, BucketKey5>>,
+  legacyFocus: string[],
+  legacyLimit?: number
+);
+export function recommend(
+  bucketsOrLegacy: BucketsArg | Partial<Record<string, BucketKey5>>,
+  localeOrLegacy: Locale | string[],
+  opts?: { limit?: number; includeDims?: Pillar[] } | number
+) {
+  if (Array.isArray(localeOrLegacy)) {
+    const limit = typeof opts === "number" ? opts : undefined;
+    const locale: Locale = "en";
+    const buckets = toModernBuckets(bucketsOrLegacy as Partial<Record<string, BucketKey5>>);
+    return recommend(buckets, locale, { limit });
   }
 
-  const areas = sortAreasByNeed(buckets, focus);
+  const limit = opts?.limit ?? 6;
+  const includeDims = opts?.includeDims;
+  const locale = localeOrLegacy;
+  const buckets = bucketsOrLegacy as BucketsArg;
+
+  const pool = includeDims?.length
+    ? catalog.filter((c) => c.dims.some((d) => includeDims.includes(d)))
+    : catalog;
+
+  const ranked = sortByImpact(buckets, pool);
+
+  // Blend: top 3 from the weakest pillar, then fill with variety.
+  const pillarsByWeakness = (["habits", "confidence", "stability", "access", "resilience"] as Pillar[])
+    .sort((a, b) => priorityFor(a, buckets) - priorityFor(b, buckets));
+
   const out: RecItem[] = [];
-  for (const area of areas) {
-    for (const item of catalog[area]) {
-      out.push(item);
-      if (out.length >= max) return out;
+  for (const p of pillarsByWeakness) {
+    for (const item of ranked) {
+      if (out.length >= limit) break;
+      if (item.dims.includes(p) && !out.find((x) => x.id === item.id)) {
+        out.push(item);
+        if (out.filter((x) => x.dims.includes(p)).length >= 3) break; // cap per-pillar early
+      }
+    }
+    if (out.length >= limit) break;
+  }
+
+  // Fill remaining slots with diverse support
+  if (out.length < limit) {
+    for (const item of ranked) {
+      if (out.length >= limit) break;
+      if (!out.find((x) => x.id === item.id)) out.push(item);
     }
   }
-  return out;
+
+  // Localize title/blurb on the way out
+  return out.map((r) => ({
+    ...r,
+    title: r.title[locale] ?? r.title.en,
+    blurb: r.blurb[locale] ?? r.blurb.en,
+  }));
 }
+
+function toModernBuckets(input: Partial<Record<string, BucketKey5>>): BucketsArg {
+  const fallback: BucketKey5 = "progress";
+  return {
+    habits: input.habits ?? fallback,
+    confidence: input.confidence ?? fallback,
+    stability: input.stability ?? fallback,
+    access: input.access ?? fallback,
+    resilience: input.resilience ?? input.knowledge ?? fallback,
+  };
+}
+
+export type RecCatalog = typeof catalog;
+export { catalog };
