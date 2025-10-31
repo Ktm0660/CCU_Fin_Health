@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import {
-  getRandomizedQuestions,
-  AnswerMap
+  questionsBase,
+  AnswerMap,
 } from "@/data/assessment";
 import QuestionCard from "@/components/QuestionCard";
-import { detectLocale } from "@/lib/locale";
+import { getLangFromQueryOrStorage } from "@/lib/lang";
+import { saveAnswers } from "@/lib/state";
 
 function Bar({ value, max }: { value: number; max: number }) {
   const pct = Math.max(0, Math.min(100, Math.round((value / Math.max(1, max)) * 100)));
@@ -17,17 +18,17 @@ function Bar({ value, max }: { value: number; max: number }) {
 }
 
 export default function Assessment() {
-  const router = useRouter();
-  const locale = detectLocale(router.asPath, router.locale);
+  const { push } = useRouter();
+  const lang = typeof window !== "undefined" ? getLangFromQueryOrStorage() : "en";
+  const loc = (lang === "es" ? "es" : "en") as "en" | "es";
 
-  // Freeze randomized questions for this session render
-  const randomized = useMemo(() => getRandomizedQuestions(), []);
-  const total = randomized.length;
+  const questions = useMemo(() => questionsBase, []);
+  const total = questions.length;
 
   const [answers, setAnswers] = useState<AnswerMap>({});
   const [i, setI] = useState(0);
 
-  const q = randomized[i];
+  const q = questions[i];
   const done = Object.keys(answers).length === total;
 
   function selectAnswer(idx: number) {
@@ -43,15 +44,13 @@ export default function Assessment() {
   }
 
   function goResults() {
-    // Persist both answers and the randomized question order so results can score correctly
-    const payload = {
-      order: randomized.map(qq => ({ id: qq.id, options: qq.options.map(o => o.text_en) })), // lightweight fingerprint
-      answers
-    };
-    try {
-      localStorage.setItem("ccu_assessment_payload", JSON.stringify(payload));
-    } catch {}
-    router.push("/results");
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("lastAnswers", JSON.stringify(answers));
+        saveAnswers({ answers });
+      } catch {}
+    }
+    push({ pathname: "/results", query: { lang, a: JSON.stringify(answers) } });
   }
 
   const selectedIndex = q ? (answers[q.id] as number | undefined) : undefined;
@@ -59,14 +58,14 @@ export default function Assessment() {
   return (
     <section>
       <h1 className="text-2xl font-semibold text-ink-900 mb-2">
-        {locale === "en"
+        {loc === "en"
           ? "Connections Financial Health & Trust Assessment"
           : "Evaluación de Salud Financiera y Confianza"}
       </h1>
 
       {/* Progress header */}
       <div className="mb-4 flex items-center justify-between text-sm text-slate-700">
-        <span>{locale === "en" ? "Progress" : "Progreso"}: {i + 1} / {total}</span>
+        <span>{loc === "en" ? "Progress" : "Progreso"}: {i + 1} / {total}</span>
         <div className="w-1/2">
           <Bar value={i + 1} max={total} />
         </div>
@@ -76,7 +75,7 @@ export default function Assessment() {
       {q && (
         <QuestionCard
           q={q}
-          locale={locale}
+          locale={loc}
           selectedIndex={selectedIndex}
           onAnswer={selectAnswer}
         />
@@ -89,7 +88,7 @@ export default function Assessment() {
           disabled={i === 0}
           className="px-4 py-2 rounded-xl border disabled:opacity-50"
         >
-          {locale === "en" ? "Back" : "Atrás"}
+          {loc === "en" ? "Back" : "Atrás"}
         </button>
 
         {i < total - 1 ? (
@@ -101,7 +100,7 @@ export default function Assessment() {
             className="px-4 py-2 rounded-xl bg-brand-500 text-white disabled:bg-slate-300"
             disabled={selectedIndex === undefined}
           >
-            {locale === "en" ? "Next" : "Siguiente"}
+            {loc === "en" ? "Next" : "Siguiente"}
           </button>
         ) : (
           <button
@@ -109,14 +108,14 @@ export default function Assessment() {
             className="px-4 py-2 rounded-xl bg-brand-600 text-white"
             disabled={!done}
           >
-            {locale === "en" ? "See my results" : "Ver mis resultados"}
+            {loc === "en" ? "See my results" : "Ver mis resultados"}
           </button>
         )}
       </div>
 
       {/* Friendly nudge */}
       <p className="text-xs text-slate-600 mt-3">
-        {locale === "en"
+        {loc === "en"
           ? "No judgment—this is just a quick snapshot to guide next steps."
           : "Sin juicios—esto es una guía rápida para los próximos pasos."}
       </p>

@@ -1,11 +1,25 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/router";
-import { t } from "@/lib/i18n";
+
 import LanguageToggle from "@/components/LanguageToggle";
+import { getLangFromQueryOrStorage, type Lang } from "@/lib/lang";
+import { t } from "@/lib/i18n";
+
+function hrefWithLang(href: string, lang: Lang) {
+  const [path, hash] = href.split("#");
+  const sep = path.includes("?") ? "&" : "?";
+  const withLang = `${path}${path.includes("lang=") ? "" : `${sep}lang=${lang}`}`;
+  return hash ? `${withLang}#${hash}` : withLang;
+}
 
 export default function Footer() {
-  const router = useRouter();
-  const locale = (router.locale as "en"|"es") || "en";
+  const [lang, setLang] = useState<Lang>("en");
+
+  useEffect(() => {
+    setLang(getLangFromQueryOrStorage());
+  }, []);
 
   return (
     <footer className="border-t bg-white mt-8 motion-safe:animate-fade-in">
@@ -13,7 +27,7 @@ export default function Footer() {
         <div>
           <p className="font-semibold text-ink-900">Connections</p>
           <p className="mt-1">
-            {locale==="en"
+            {lang === "en"
               ? "Serving rural Idaho with judgment-free guidance."
               : "Sirviendo a Idaho rural con orientación sin juicios."}
           </p>
@@ -22,21 +36,53 @@ export default function Footer() {
           </div>
         </div>
         <div>
-          <p className="font-semibold text-ink-900">{t(locale,"nav.explore")}</p>
+          <p className="font-semibold text-ink-900">{t(lang, "nav.explore")}</p>
           <ul className="mt-2 space-y-1">
-            <li><Link className="no-underline" href="/assessment">{t(locale,"nav.assessment")}</Link></li>
-            <li><Link className="no-underline" href="/resources">{t(locale,"nav.resources")}</Link></li>
-            <li><Link className="no-underline" href="/glossary">{t(locale,"nav.glossary")}</Link></li>
-            <li><Link className="no-underline" href="/products">{t(locale,"nav.products")}</Link></li>
-            <li><Link className="no-underline" href="/results">{t(locale,"nav.results")}</Link></li>
+            <li>
+              <Link className="no-underline" href={hrefWithLang("/assessment", lang)}>
+                {t(lang, "nav.assessment")}
+              </Link>
+            </li>
+            <li>
+              <Link className="no-underline" href={hrefWithLang("/resources", lang)}>
+                {t(lang, "nav.resources")}
+              </Link>
+            </li>
+            <li>
+              <Link className="no-underline" href={hrefWithLang("/glossary", lang)}>
+                {t(lang, "nav.glossary")}
+              </Link>
+            </li>
+            <li>
+              <Link className="no-underline" href={hrefWithLang("/products", lang)}>
+                {t(lang, "nav.products")}
+              </Link>
+            </li>
+            <li>
+              <Link className="no-underline" href={hrefWithLang("/results", lang)}>
+                {t(lang, "nav.results")}
+              </Link>
+            </li>
           </ul>
         </div>
         <div>
-          <p className="font-semibold text-ink-900">{t(locale,"nav.getHelp")}</p>
+          <p className="font-semibold text-ink-900">{t(lang, "nav.getHelp")}</p>
           <ul className="mt-2 space-y-1">
-            <li><Link className="no-underline" href="/plan">{t(locale,"nav.plan")}</Link></li>
-            <li><Link className="no-underline" href="/resources#counseling">{t(locale,"nav.counseling")}</Link></li>
-            <li><Link className="no-underline" href="/resources#mobile">{t(locale,"nav.mobileUnit")}</Link></li>
+            <li>
+              <Link className="no-underline" href={hrefWithLang("/plan", lang)}>
+                {t(lang, "nav.plan")}
+              </Link>
+            </li>
+            <li>
+              <Link className="no-underline" href={hrefWithLang("/resources#counseling", lang)}>
+                {t(lang, "nav.counseling")}
+              </Link>
+            </li>
+            <li>
+              <Link className="no-underline" href={hrefWithLang("/resources#mobile", lang)}>
+                {t(lang, "nav.mobileUnit")}
+              </Link>
+            </li>
           </ul>
         </div>
       </div>

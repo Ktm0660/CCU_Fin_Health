@@ -1,18 +1,17 @@
-import Link from "next/link";
-import { useRouter } from "next/router";
+"use client";
 
-export default function LanguageToggle({ className="" }: { className?: string }) {
-  const router = useRouter();
-  const locale = (router.locale as "en"|"es") || "en";
-  const nextLocale = locale === "en" ? "es" : "en";
+import { getLangFromQueryOrStorage, setLang, type Lang } from "@/lib/lang";
+
+export default function LanguageToggle({ className = "" }: { className?: string }) {
+  const lang: Lang = typeof window !== "undefined" ? getLangFromQueryOrStorage() : "en";
+  const other: Lang = lang === "en" ? "es" : "en";
   return (
-    <Link
-      href={router.asPath}
-      locale={nextLocale}
-      className={`inline-flex items-center justify-center rounded-lg border px-2.5 py-1.5 text-sm no-underline ${className}`}
-      aria-label={locale==="en" ? "Switch to Spanish" : "Cambiar a inglés"}
+    <button
+      onClick={() => setLang(other)}
+      className={`px-3 py-1 rounded-xl border hover:bg-slate-50 ${className}`}
+      aria-label="Toggle language"
     >
-      {nextLocale === "es" ? "Español" : "English"}
-    </Link>
+      {lang === "en" ? "Español" : "English"}
+    </button>
   );
 }

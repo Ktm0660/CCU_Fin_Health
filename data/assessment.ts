@@ -358,7 +358,7 @@ function perDimMax(questions: Question[]): PillarMax {
   return max;
 }
 
-export function scoreAnswers(questions: Question[], answers: AnswerMap): Score {
+function computeScore(questions: Question[], answers: AnswerMap): Score {
   const by: PillarScores = { habits: 0, confidence: 0, stability: 0, trust: 0, resilience: 0 };
   questions.forEach(q => {
     const idx = answers[q.id];
@@ -373,18 +373,247 @@ export function scoreAnswers(questions: Question[], answers: AnswerMap): Score {
   return { byPillar: by, maxByPillar: maxBy, total, totalMax };
 }
 
+export function scoreAnswers(answers: AnswerMap): Score;
+export function scoreAnswers(questions: Question[], answers: AnswerMap): Score;
+export function scoreAnswers(arg1: Question[] | AnswerMap, arg2?: AnswerMap): Score {
+  if (Array.isArray(arg1)) {
+    return computeScore(arg1, arg2 ?? {});
+  }
+  return computeScore(questionsBase, arg1 ?? {});
+}
+
 export function normalize0to100(value: number, max: number) {
   return Math.round((value / Math.max(1, max)) * 100);
 }
 
-// Backwards-compat exports some pages might expect:
-export function bucketize5(pct: number): BucketKey5 {
-  if (pct >= 0.8) return "empowered";
-  if (pct >= 0.6) return "on_track";
-  if (pct >= 0.4) return "progress";
-  if (pct >= 0.2) return "getting_started";
-  return "building";
+export type BucketizedScore = { key: BucketKey5; pct: number; rank: number };
+
+export function bucketize5(score: Score): BucketizedScore;
+export function bucketize5(pct: number): BucketKey5;
+export function bucketize5(input: number | Score): BucketKey5 | BucketizedScore {
+  const pct = typeof input === "number" ? input : (input.total / Math.max(1, input.totalMax));
+  let key: BucketKey5;
+  if (pct >= 0.8) key = "empowered";
+  else if (pct >= 0.6) key = "on_track";
+  else if (pct >= 0.4) key = "progress";
+  else if (pct >= 0.2) key = "getting_started";
+  else key = "building";
+
+  if (typeof input === "number") return key;
+  return { key, pct, rank: rankOrder5[key] };
 }
+
+type Lang = "en" | "es";
+type BucketContent = {
+  title: string;
+  summary: string;
+  strengths: string[];
+  focus: string[];
+  tips: string[];
+};
+
+export const bucketCopy: Record<BucketKey5, Record<Lang, BucketContent>> = {
+  building: {
+    en: {
+      title: "Finding your footing",
+      summary:
+        "Money is tight right now. We’ll steady essentials, reduce surprises, and build a small safety buffer so you can breathe.",
+      strengths: [
+        "You’re showing up and asking for clarity instead of guessing.",
+        "You juggle competing essentials every month—so you already know where the pain points are.",
+      ],
+      focus: [
+        "Protect housing, food, and transportation first.",
+        "Automate or set reminders for one or two critical bills.",
+        "Start the tiniest possible emergency cushion ($10–$25 per payday).",
+      ],
+      tips: [
+        "List one community support (family, church, CU coach) you can call if income is delayed.",
+        "Use a simple weekly list: needs, must-pay bills, and urgent goals.",
+        "Move surprise money (rebates, refunds) straight into a labeled savings pocket.",
+      ],
+    },
+    es: {
+      title: "Buscando estabilidad",
+      summary:
+        "El dinero está muy ajustado. Vamos a estabilizar lo esencial, reducir sorpresas y crear un pequeño colchón para que respires mejor.",
+      strengths: [
+        "Das el paso de pedir claridad en lugar de adivinar.",
+        "Cada mes equilibras gastos esenciales, así que sabes dónde duele más.",
+      ],
+      focus: [
+        "Protege primero vivienda, comida y transporte.",
+        "Automatiza o pon recordatorios para una o dos cuentas críticas.",
+        "Empieza el colchón más pequeño posible ($10–$25 por pago).",
+      ],
+      tips: [
+        "Anota un apoyo comunitario (familia, iglesia, asesor) al que puedas llamar si el ingreso se retrasa.",
+        "Usa una lista semanal simple: necesidades, cuentas obligatorias y metas urgentes.",
+        "Envía dinero sorpresa (reembolsos, devoluciones) directo a un ahorro con nombre.",
+      ],
+    },
+  },
+  getting_started: {
+    en: {
+      title: "Building momentum",
+      summary:
+        "Pieces are coming together. We’ll lock in steady bill habits, strengthen confidence, and grow a starter buffer.",
+      strengths: [
+        "You already track key bills and know when they hit.",
+        "You’re willing to try new systems when they’re simple and judgment-free.",
+      ],
+      focus: [
+        "Create one dashboard or list for upcoming bills and paydays.",
+        "Practice one confident money conversation this month.",
+        "Grow savings to cover one surprise expense (around $150–$300).",
+      ],
+      tips: [
+        "Turn on balance or large-purchase alerts.",
+        "Schedule a 15-minute weekly money check-in.",
+        "Bundle due dates where possible so you only touch bills a few times each month.",
+      ],
+    },
+    es: {
+      title: "Tomando impulso",
+      summary:
+        "Las piezas se están uniendo. Aseguraremos hábitos con las cuentas, ganaremos confianza y haremos crecer un colchón inicial.",
+      strengths: [
+        "Ya controlas las cuentas principales y sabes cuándo vencen.",
+        "Estás dispuesto a probar sistemas nuevos cuando son simples y sin juicios.",
+      ],
+      focus: [
+        "Crea un listado o panel con las próximas cuentas y días de pago.",
+        "Practica una conversación sobre dinero con confianza este mes.",
+        "Aumenta el ahorro para cubrir un gasto sorpresa (entre $150 y $300).",
+      ],
+      tips: [
+        "Activa alertas de saldo o de compras grandes.",
+        "Programa una revisión semanal de 15 minutos.",
+        "Agrupa fechas de pago cuando se pueda para manejar cuentas solo unas cuantas veces al mes.",
+      ],
+    },
+  },
+  progress: {
+    en: {
+      title: "Making steady progress",
+      summary:
+        "Habits are forming. We’ll fine-tune automation, protect momentum, and keep growing confidence in your plan.",
+      strengths: [
+        "You’ve already built repeatable routines.",
+        "You review your accounts enough to catch issues early.",
+      ],
+      focus: [
+        "Automate key transfers (savings, debt pay-down) where possible.",
+        "Stress-test the budget for one larger surprise expense.",
+        "Document your system so it’s easy to stay consistent.",
+      ],
+      tips: [
+        "Name specific saving goals (car repairs, medical, holidays).",
+        "Use a single sheet or app to track wins each month.",
+        "Share your approach with someone you trust for extra accountability.",
+      ],
+    },
+    es: {
+      title: "Progreso constante",
+      summary:
+        "Los hábitos ya están tomando forma. Vamos a afinar la automatización, proteger el ritmo y mantener la confianza en tu plan.",
+      strengths: [
+        "Ya tienes rutinas repetibles.",
+        "Revisas tus cuentas lo suficiente para detectar problemas temprano.",
+      ],
+      focus: [
+        "Automatiza transferencias clave (ahorro, pago de deudas) cuando sea posible.",
+        "Pon a prueba tu presupuesto ante un gasto grande inesperado.",
+        "Documenta tu sistema para mantener la consistencia.",
+      ],
+      tips: [
+        "Nombra metas de ahorro específicas (auto, médico, fiestas).",
+        "Usa una hoja o app para anotar logros cada mes.",
+        "Comparte tu método con alguien de confianza para más responsabilidad.",
+      ],
+    },
+  },
+  on_track: {
+    en: {
+      title: "On track and growing",
+      summary:
+        "You’re in a solid rhythm. We’ll reinforce systems, grow buffers, and plan for upcoming milestones.",
+      strengths: [
+        "Your bills and savings flows are predictable.",
+        "You make thoughtful money decisions with information, not guesswork.",
+      ],
+      focus: [
+        "Expand your emergency fund toward 1–3 months of essentials.",
+        "Review insurance, fees, and rates to make sure they still fit.",
+        "Set medium-term goals (car, education, home repairs) with timelines.",
+      ],
+      tips: [
+        "Schedule quarterly financial reviews on your calendar.",
+        "Automate contributions to sinking funds and retirement.",
+        "Check in with a coach or advisor yearly to stay proactive.",
+      ],
+    },
+    es: {
+      title: "En camino y creciendo",
+      summary:
+        "Tienes un ritmo sólido. Vamos a reforzar sistemas, ampliar colchones y planear los próximos hitos.",
+      strengths: [
+        "Tus flujos de cuentas y ahorros son predecibles.",
+        "Tomas decisiones informadas, no a base de suposiciones.",
+      ],
+      focus: [
+        "Expande tu fondo de emergencia hacia 1–3 meses de gastos esenciales.",
+        "Revisa seguros, comisiones y tasas para confirmar que siguen funcionando.",
+        "Define metas de mediano plazo (auto, educación, reparaciones) con fechas.",
+      ],
+      tips: [
+        "Agenda revisiones financieras trimestrales.",
+        "Automatiza aportes a fondos de reserva y retiro.",
+        "Habla con un asesor o coach cada año para mantenerte proactivo.",
+      ],
+    },
+  },
+  empowered: {
+    en: {
+      title: "Ready to optimize",
+      summary:
+        "You have a strong foundation. Now it’s about optimizing, cutting friction, and aligning money with long-term goals.",
+      strengths: [
+        "You already plan ahead and review results regularly.",
+        "You’re comfortable teaching others what has worked for you.",
+      ],
+      focus: [
+        "Fine-tune investments, insurance, and tax strategies.",
+        "Identify hidden costs or leaks and redirect them toward goals.",
+        "Mentor others or involve family so the system stays resilient.",
+      ],
+      tips: [
+        "Automate charitable giving or community contributions.",
+        "Review credit and loan products annually for better terms.",
+        "Set ambitious 6–12 month milestones and break them into monthly moves.",
+      ],
+    },
+    es: {
+      title: "Listo para optimizar",
+      summary:
+        "Tienes una base fuerte. Ahora toca optimizar, reducir fricción y alinear el dinero con metas de largo plazo.",
+      strengths: [
+        "Ya planeas con anticipación y revisas resultados con frecuencia.",
+        "Te sientes cómodo enseñando a otros lo que te funciona.",
+      ],
+      focus: [
+        "Ajusta inversiones, seguros y estrategias fiscales.",
+        "Detecta costos ocultos o fugas y redirígelos a tus metas.",
+        "Guía a otros o involucra a la familia para que el sistema sea resistente.",
+      ],
+      tips: [
+        "Automatiza donaciones o aportes comunitarios.",
+        "Revisa productos de crédito y préstamos cada año para mejorar condiciones.",
+        "Define metas ambiciosas de 6–12 meses y divídelas en pasos mensuales.",
+      ],
+    },
+  },
+};
 
 // ---------- Legacy compatibility aliases (for older modules) ----------
 export type Bucket5 = BucketKey5;        // matches `import type { Bucket5 } from "./assessment"`
