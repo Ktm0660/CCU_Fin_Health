@@ -120,12 +120,13 @@ export default function PlanPage() {
   const secondary = ordered[1] ?? "confidence";
 
   // Map persona to a starting lesson level
+  // Rank level to start recommendations per persona
   const personaLevelMap: Record<PersonaKey, Level> = {
     rebuilder: "discover",
     starter: "stabilize",
-    steadier: "grow",
-    planner: "grow",
-    navigator: "thrive",
+    progress: "grow",
+    on_track: "grow",
+    empowered: "thrive",
   };
   const startLevel = personaLevelMap[persona];
 
