@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
 import { resources, Resource, Area, RType, rTitle } from "@/data/resources";
 import ResourceCard from "@/components/ResourceCard";
+import { getLangFromQueryOrStorage, type Lang } from "@/lib/lang";
 
 const AREAS: { key: Area|"all"; en: string; es: string }[] = [
   { key: "all", en: "All topics", es: "Todos los temas" },
@@ -22,10 +23,14 @@ const TYPES: { key: RType|"all"; en: string; es: string }[] = [
 
 export default function ResourcesPage() {
   const router = useRouter();
-  const locale = (router.locale as "en"|"es") || "en";
+  const [locale, setLocale] = useState<Lang>((router.query.lang === "es" ? "es" : (router.locale as Lang)) || "en");
   const [area, setArea] = useState<Area|"all">("all");
   const [type, setType] = useState<RType|"all">("all");
   const [q, setQ] = useState("");
+
+  useEffect(() => {
+    setLocale(getLangFromQueryOrStorage());
+  }, [router.locale, router.query.lang]);
 
   const list = useMemo(() => {
     let base = resources.filter(r => r.locale === "both" || r.locale === locale);

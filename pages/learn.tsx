@@ -1,7 +1,8 @@
 import { useRouter } from "next/router";
 import { lessons, Area, lessonTitle } from "@/data/lessons";
 import LessonCard from "@/components/LessonCard";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { getLangFromQueryOrStorage, type Lang } from "@/lib/lang";
 
 const AREAS: { key: Area; en: string; es: string }[] = [
   { key: "habits", en: "Habits", es: "Hábitos" },
@@ -11,8 +12,12 @@ const AREAS: { key: Area; en: string; es: string }[] = [
 
 export default function Learn() {
   const router = useRouter();
-  const locale = (router.locale as "en"|"es") || "en";
+  const [locale, setLocale] = useState<Lang>((router.query.lang === "es" ? "es" : (router.locale as Lang)) || "en");
   const [filter, setFilter] = useState<Area | "all">("all");
+
+  useEffect(() => {
+    setLocale(getLangFromQueryOrStorage());
+  }, [router.locale, router.query.lang]);
 
   const list = useMemo(() => {
     const base = [...lessons];

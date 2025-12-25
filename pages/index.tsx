@@ -1,12 +1,18 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import Head from "next/head";
+import { useEffect, useState } from "react";
+import { getLangFromQueryOrStorage, hrefWithLang, type Lang } from "@/lib/lang";
 
 export default function Home() {
   const router = useRouter();
-  const locale = (router.locale as "en" | "es") || "en";
-  const t = (en: string, es: string) => (locale === "en" ? en : es);
-  const langToggle = locale === "en" ? "es" : "en";
+  const [lang, setLang] = useState<Lang>((router.query.lang === "es" ? "es" : (router.locale as Lang)) || "en");
+  const t = (en: string, es: string) => (lang === "en" ? en : es);
+  const langToggle = lang === "en" ? "es" : "en";
+
+  useEffect(() => {
+    setLang(getLangFromQueryOrStorage());
+  }, [router.locale, router.query.lang]);
 
   return (
     <>
@@ -42,18 +48,17 @@ export default function Home() {
 
                 {/* Full-width primary CTA on mobile */}
                 <div className="mt-7 flex flex-col sm:flex-row gap-3">
-                  <Link
-                    href="/assessment"
-                    className="btn btn-secondary w-full sm:w-auto px-6 py-4 text-base no-underline shadow-soft active:scale-[0.99]"
-                  >
-                    {t("Start my free checkup", "Empezar mi evaluación gratis")}
-                  </Link>
-                  <Link
-                    href={router.asPath}
-                    locale={langToggle}
-                    className="inline-flex items-center justify-center rounded-xl border px-6 py-4 no-underline text-ink-900 bg-white hover:bg-brand-50 w-full sm:w-auto"
-                  >
-                    {langToggle === "es" ? "Español" : "English"}
+                    <Link
+                      href={hrefWithLang("/assessment", lang)}
+                      className="btn btn-secondary w-full sm:w-auto px-6 py-4 text-base no-underline shadow-soft active:scale-[0.99]"
+                    >
+                      {t("Start my free checkup", "Empezar mi evaluación gratis")}
+                    </Link>
+                    <Link
+                      href={hrefWithLang(router.asPath, langToggle)}
+                      className="inline-flex items-center justify-center rounded-xl border px-6 py-4 no-underline text-ink-900 bg-white hover:bg-brand-50 w-full sm:w-auto"
+                    >
+                      {langToggle === "es" ? "Español" : "English"}
                   </Link>
                 </div>
 
@@ -102,9 +107,9 @@ export default function Home() {
                     <Metric label={t("Confidence", "Confianza")} value={t("Progress", "Tomando ritmo")} />
                     <Metric label={t("Stability", "Estabilidad")} value={t("Getting Started", "Empezando")} />
                   </div>
-                  <Link href="/assessment" className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-brand-500 px-4 py-3 text-white no-underline shadow-soft hover:brightness-110 transition">
-                    {t("See your snapshot", "Conoce tu panorama")}
-                  </Link>
+                    <Link href={hrefWithLang("/assessment", lang)} className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-brand-500 px-4 py-3 text-white no-underline shadow-soft hover:brightness-110 transition">
+                      {t("See your snapshot", "Conoce tu panorama")}
+                    </Link>
                 </div>
               </div>
             </div>

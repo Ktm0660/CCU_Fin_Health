@@ -4,7 +4,7 @@ import Link from "next/link";
 
 import { scoreAnswers, bucketize5, bucketCopy, type Score, type AnswerMap, questionsBase } from "@/data/assessment";
 import { recommend } from "@/data/recommendations";
-import { getLangFromQueryOrStorage } from "@/lib/lang";
+import { getLangFromQueryOrStorage, hrefWithLang } from "@/lib/lang";
 import { loadAnswers } from "@/lib/state";
 
 function readAnswers(queryA: string | string[] | undefined): AnswerMap {
@@ -53,7 +53,7 @@ export default function Results() {
     if (typeof window !== "undefined") window.scrollTo({ top: 0 });
   }, []);
 
-  const retakeHref = `/assessment?lang=${lang}`;
+    const retakeHref = hrefWithLang("/assessment", lang);
 
   return (
     <section>
@@ -113,23 +113,23 @@ export default function Results() {
                   {lang === "en" ? r.summary_en : (r.summary_es || r.summary_en)}
                 </p>
               )}
-              <div className="mt-2">
-                <Link href={r.href || "/tools"} className="text-sm underline">
-                  {lang === "en" ? "Open guide →" : "Abrir guía →"}
-                </Link>
-              </div>
+                <div className="mt-2">
+                  <Link href={hrefWithLang(r.href || "/tools", lang)} className="text-sm underline">
+                    {lang === "en" ? "Open guide →" : "Abrir guía →"}
+                  </Link>
+                </div>
             </div>
           ))}
         </div>
 
-        <div className="mt-6 flex gap-3 flex-wrap">
-          <Link href={`/tools?lang=${lang}`} className="px-4 py-2 rounded-xl border no-underline">
-            {lang === "en" ? "Explore more tools" : "Explorar más herramientas"}
-          </Link>
-          <Link href={`/glossary?lang=${lang}`} className="px-4 py-2 rounded-xl bg-brand-500 text-white no-underline">
-            {lang === "en" ? "Jargon Breakdown" : "Glosario sin jerga"}
-          </Link>
-        </div>
+          <div className="mt-6 flex gap-3 flex-wrap">
+            <Link href={hrefWithLang("/tools", lang)} className="px-4 py-2 rounded-xl border no-underline">
+              {lang === "en" ? "Explore more tools" : "Explorar más herramientas"}
+            </Link>
+            <Link href={hrefWithLang("/glossary", lang)} className="px-4 py-2 rounded-xl bg-brand-500 text-white no-underline">
+              {lang === "en" ? "Jargon Breakdown" : "Glosario sin jerga"}
+            </Link>
+          </div>
       </div>
     </section>
   );

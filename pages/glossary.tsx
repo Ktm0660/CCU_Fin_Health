@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { hrefWithLang } from "@/lib/lang";
 
 type Term = {
   key: string;
@@ -107,16 +108,16 @@ export default function Glossary() {
 
             <div className="mt-3">
               {/* Simple related links based on tag heuristics */}
-              {item.tags?.includes("credit") && (
-                <Link href="/tools?topic=confidence" className="text-sm underline">
-                  {lang==="en" ? "See credit-building guides →" : "Ver guías para construir crédito →"}
-                </Link>
-              )}
-              {item.tags?.includes("fees") && (
-                <Link href="/tools?topic=trust" className="text-sm underline">
-                  {lang==="en" ? "See fee-avoidance tips →" : "Ver consejos para evitar cargos →"}
-                </Link>
-              )}
+                {item.tags?.includes("credit") && (
+                  <Link href={hrefWithLang("/tools?topic=confidence", lang)} className="text-sm underline">
+                    {lang==="en" ? "See credit-building guides →" : "Ver guías para construir crédito →"}
+                  </Link>
+                )}
+                {item.tags?.includes("fees") && (
+                  <Link href={hrefWithLang("/tools?topic=trust", lang)} className="text-sm underline">
+                    {lang==="en" ? "See fee-avoidance tips →" : "Ver consejos para evitar cargos →"}
+                  </Link>
+                )}
             </div>
           </li>
         ))}
