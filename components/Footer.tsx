@@ -4,15 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import LanguageToggle from "@/components/LanguageToggle";
-import { getLangFromQueryOrStorage, type Lang } from "@/lib/lang";
+import { getLangFromQueryOrStorage, hrefWithLang, type Lang } from "@/lib/lang";
 import { t } from "@/lib/i18n";
-
-function hrefWithLang(href: string, lang: Lang) {
-  const [path, hash] = href.split("#");
-  const sep = path.includes("?") ? "&" : "?";
-  const withLang = `${path}${path.includes("lang=") ? "" : `${sep}lang=${lang}`}`;
-  return hash ? `${withLang}#${hash}` : withLang;
-}
 
 export default function Footer() {
   const [lang, setLang] = useState<Lang>("en");

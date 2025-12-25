@@ -1,13 +1,19 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { t } from "@/lib/i18n";
 import LanguageToggle from "@/components/LanguageToggle";
+import { getLangFromQueryOrStorage, hrefWithLang, type Lang } from "@/lib/lang";
 
 export default function MobileMenu() {
   const [open, setOpen] = useState(false);
   const router = useRouter();
-  const locale = (router.locale as "en"|"es") || "en";
+  const [locale, setLocale] = useState<Lang>((router.locale as Lang) || "en");
+
+  useEffect(() => {
+    const detected = typeof window !== "undefined" ? getLangFromQueryOrStorage() : (router.locale as Lang) || "en";
+    setLocale(detected);
+  }, [router.locale]);
 
   return (
     <>
@@ -40,22 +46,22 @@ export default function MobileMenu() {
               </button>
             </div>
 
-            <nav className="mt-4 flex-1">
-              <ul className="space-y-2 text-base">
-                <li><Link className="no-underline block px-2 py-2 rounded-lg hover:bg-brand-50" href="/">{t(locale,"nav.home")}</Link></li>
+              <nav className="mt-4 flex-1">
+                <ul className="space-y-2 text-base">
+                <li><Link className="no-underline block px-2 py-2 rounded-lg hover:bg-brand-50" href={hrefWithLang("/", locale)}>{t(locale,"nav.home")}</Link></li>
                 <li className="space-y-1">
-                  <Link className="no-underline block px-2 py-2 rounded-lg hover:bg-brand-50" href="/assessment">{t(locale,"nav.assessment")}</Link>
-                  <Link className="no-underline block px-3 py-1 text-sm text-ink-700/80" href="/assessment-v2">
+                  <Link className="no-underline block px-2 py-2 rounded-lg hover:bg-brand-50" href={hrefWithLang("/assessment", locale)}>{t(locale,"nav.assessment")}</Link>
+                  <Link className="no-underline block px-3 py-1 text-sm text-ink-700/80" href={hrefWithLang("/assessment-v2", locale)}>
                     {locale==="es" ? "Evaluación (Beta)" : "Assessment (Beta)"}
                   </Link>
                 </li>
-                <li><Link className="no-underline block px-2 py-2 rounded-lg hover:bg-brand-50" href="/resources">{t(locale,"nav.resources")}</Link></li>
-                <li><Link className="no-underline block px-2 py-2 rounded-lg hover:bg-brand-50" href="/glossary">{t(locale,"nav.glossary")}</Link></li>
-                <li><Link className="no-underline block px-2 py-2 rounded-lg hover:bg-brand-50" href="/products">{t(locale,"nav.products")}</Link></li>
-                <li><Link className="no-underline block px-2 py-2 rounded-lg hover:bg-brand-50" href="/results">{t(locale,"nav.results")}</Link></li>
-                <li><Link className="no-underline block px-2 py-2 rounded-lg hover:bg-brand-50" href="/plan">{t(locale,"nav.plan")}</Link></li>
-              </ul>
-            </nav>
+                <li><Link className="no-underline block px-2 py-2 rounded-lg hover:bg-brand-50" href={hrefWithLang("/resources", locale)}>{t(locale,"nav.resources")}</Link></li>
+                <li><Link className="no-underline block px-2 py-2 rounded-lg hover:bg-brand-50" href={hrefWithLang("/glossary", locale)}>{t(locale,"nav.glossary")}</Link></li>
+                <li><Link className="no-underline block px-2 py-2 rounded-lg hover:bg-brand-50" href={hrefWithLang("/products", locale)}>{t(locale,"nav.products")}</Link></li>
+                <li><Link className="no-underline block px-2 py-2 rounded-lg hover:bg-brand-50" href={hrefWithLang("/results", locale)}>{t(locale,"nav.results")}</Link></li>
+                <li><Link className="no-underline block px-2 py-2 rounded-lg hover:bg-brand-50" href={hrefWithLang("/plan", locale)}>{t(locale,"nav.plan")}</Link></li>
+                </ul>
+              </nav>
 
             <div className="pt-3 border-t">
               <LanguageToggle className="w-full justify-center" />

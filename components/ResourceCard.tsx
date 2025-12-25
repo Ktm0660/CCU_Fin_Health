@@ -1,4 +1,5 @@
 import { Resource, rTitle, rSummary } from "@/data/resources";
+import { hrefWithLang } from "@/lib/lang";
 
 export default function ResourceCard({ r, locale }:{ r: Resource; locale: "en"|"es" }) {
   const badge = (type: Resource["type"]) =>
@@ -23,18 +24,24 @@ export default function ResourceCard({ r, locale }:{ r: Resource; locale: "en"|"
           </div>
           <p className="text-lg font-semibold text-ink-900 leading-snug">{rTitle(r, locale)}</p>
           <p className="text-sm text-slate-700 mt-1">{rSummary(r, locale)}</p>
-          <div className="mt-3">
-            <a
-              href={r.href}
-              className="inline-flex items-center justify-center rounded-xl border px-3 py-2 text-sm no-underline text-ink-900 hover:bg-slate-50"
-              target={r.href.startsWith("http") ? "_blank" : "_self"}
-              rel="noreferrer"
-            >
-              {locale==="en" ? "Open" : "Abrir"}
-            </a>
+            <div className="mt-3">
+              {(() => {
+                const isExternal = r.href.startsWith("http");
+                const linkHref = hrefWithLang(r.href, locale);
+                return (
+                  <a
+                    href={linkHref}
+                    className="inline-flex items-center justify-center rounded-xl border px-3 py-2 text-sm no-underline text-ink-900 hover:bg-slate-50"
+                    target={isExternal ? "_blank" : "_self"}
+                    rel="noreferrer"
+                  >
+                    {locale==="en" ? "Open" : "Abrir"}
+                  </a>
+                );
+              })()}
+            </div>
           </div>
         </div>
       </div>
-    </div>
   );
 }
