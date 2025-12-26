@@ -1,5 +1,20 @@
 export type Lang = "en" | "es";
 
+export type LangSource = "query" | "storage" | "default";
+
+export function getLangWithSource(): { lang: Lang; source: LangSource } {
+  if (typeof window === "undefined") return { lang: "en", source: "default" };
+  const url = new URL(window.location.href);
+  const q = url.searchParams.get("lang");
+  if (q === "en" || q === "es") {
+    localStorage.setItem("lang", q);
+    return { lang: q, source: "query" };
+  }
+  const s = localStorage.getItem("lang");
+  if (s === "es" || s === "en") return { lang: s as Lang, source: "storage" };
+  return { lang: "en", source: "default" };
+}
+
 export function hrefWithLang(href: string, lang: Lang) {
   if (!href) return href;
   const lower = href.toLowerCase();
@@ -13,15 +28,7 @@ export function hrefWithLang(href: string, lang: Lang) {
 }
 
 export function getLangFromQueryOrStorage(): Lang {
-  if (typeof window === "undefined") return "en";
-  const url = new URL(window.location.href);
-  const q = url.searchParams.get("lang");
-  if (q === "en" || q === "es") {
-    localStorage.setItem("lang", q);
-    return q;
-  }
-  const s = localStorage.getItem("lang");
-  return s === "es" ? "es" : "en";
+  return getLangWithSource().lang;
 }
 
 export function setLang(lang: Lang) {
