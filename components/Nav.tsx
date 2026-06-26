@@ -28,15 +28,10 @@ export default function Nav() {
         {/* Desktop links */}
         <div className="hidden md:flex items-center gap-5 text-sm">
             <Link href={hrefWithLang("/", locale)} className="no-underline text-ink-900 hover:text-brand-500">{t(locale,"nav.home")}</Link>
-            <div className="flex items-center gap-2">
-              <Link href={hrefWithLang("/assessment", locale)} className="no-underline text-ink-900 hover:text-brand-500">{t(locale,"nav.assessment")}</Link>
-              <Link href={hrefWithLang("/assessment-v2", locale)} className="text-sm opacity-80 hover:opacity-100">
-                {locale==="es" ? "Evaluación (Beta)" : "Assessment (Beta)"}
-              </Link>
-            </div>
+            <Link href={hrefWithLang("/assessment", locale)} className="no-underline text-ink-900 hover:text-brand-500">{locale==="es" ? "Revisión" : "Check-in"}</Link>
             <Link href={hrefWithLang("/resources", locale)} className="no-underline text-ink-900 hover:text-brand-500">{t(locale,"nav.resources")}</Link>
-            <Link href={hrefWithLang("/products", locale)} className="no-underline text-ink-900 hover:text-brand-500">{t(locale,"nav.products")}</Link>
-            <Link href={hrefWithLang("/glossary", locale)} className="no-underline text-ink-900 hover:text-brand-500">{t(locale,"nav.glossary")}</Link>
+            <Link href={hrefWithLang("/tools", locale)} className="no-underline text-ink-900 hover:text-brand-500">{locale==="es" ? "Herramientas" : "Tools"}</Link>
+            <Link href={hrefWithLang("/glossary", locale)} className="no-underline text-ink-900 hover:text-brand-500">{locale==="es" ? "Traductor" : "Translator"}</Link>
           <LanguageToggle />
         </div>
 

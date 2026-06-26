@@ -1,156 +1,38 @@
-import { useRouter } from "next/router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-
-import { scoreAnswers, bucketize5, bucketCopy, type Score, type AnswerMap, questionsBase } from "@/data/assessment";
-import { recommend } from "@/data/recommendations";
-import { getLangWithSource, hrefWithLang, type Lang, type LangSource } from "@/lib/lang";
-import { computePillarMetrics } from "@/lib/resultsShared";
-import { readAnswersWithSource, shouldShowDebug } from "@/lib/resultsDebug";
-import { ActionPlan } from "@/components/ActionPlan";
-import { ResultsDebugPanel } from "@/components/ResultsDebugPanel";
+import { useRouter } from "next/router";
+import { getLangFromQueryOrStorage, hrefWithLang, type Lang } from "@/lib/lang";
+import { clearLocalPlan, loadLocalPlan, type LocalMoneyPlan } from "@/lib/localPlanStorage";
+import PathwayResult from "@/components/PathwayResult";
 
 export default function Results() {
   const router = useRouter();
-  const langMeta: { lang: Lang; source: LangSource } =
-    typeof window !== "undefined" ? getLangWithSource() : { lang: "en", source: "default" as const };
-  const [answerState, setAnswerState] = useState<{ answers: AnswerMap; sourceKey: string }>({ answers: {}, sourceKey: "none" });
+  const [lang, setLang] = useState<Lang>("en");
+  const [plan, setPlan] = useState<LocalMoneyPlan | null>(null);
 
   useEffect(() => {
-    setAnswerState(readAnswersWithSource(router.query.a));
-  }, [router.query.a]);
+    setLang(getLangFromQueryOrStorage());
+    setPlan(loadLocalPlan());
+  }, [router.query.lang]);
 
-  const { answers, sourceKey } = answerState;
-  const hasAnswers = Object.keys(answers || {}).length > 0;
+  const T = (en: string, es: string) => lang === "es" ? es : en;
 
-  const s = useMemo<Score>(() => scoreAnswers(questionsBase, answers), [answers]);
-  const metrics = useMemo(() => computePillarMetrics(s), [s]);
-  const bucketInfo = useMemo(() => bucketize5(s), [s]);
-  const key = typeof bucketInfo === "string" ? bucketInfo : bucketInfo.key;
-  const copy = (bucketCopy as any)[key]?.[langMeta.lang] || {
-    title: langMeta.lang === "en" ? "Your profile" : "Tu perfil",
-    summary: "",
-    strengths: [],
-    focus: [],
-    tips: [],
-  };
+  function clearPlan() {
+    clearLocalPlan();
+    setPlan(null);
+  }
 
-  const recs = useMemo(() => recommend(key as any), [key]);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") window.scrollTo({ top: 0 });
-  }, []);
-
-  const retakeHref = hrefWithLang("/assessment", langMeta.lang);
-
-  const debugVisible = shouldShowDebug(router.query.debug);
-
-  return (
-    <section>
-      <div className="rounded-3xl bg-brand-50 border p-6 md:p-8 shadow mb-6">
-        <div className="flex items-start justify-between gap-4">
-          <h1 className="text-2xl md:text-3xl font-semibold text-ink-900">
-            {langMeta.lang === "en" ? "Your Financial Profile" : "Tu perfil financiero"}
-          </h1>
-          <Link href={retakeHref} className="text-sm underline">
-            {langMeta.lang === "en" ? "Retake assessment" : "Repetir evaluación"}
-          </Link>
+  if (!plan) {
+    return (
+      <section className="py-8">
+        <div className="rounded-3xl border bg-white p-6 text-center shadow md:p-8">
+          <h1 className="text-3xl font-semibold text-ink-900">{T("No saved money plan found", "No se encontró un plan guardado")}</h1>
+          <p className="mx-auto mt-3 max-w-xl text-slate-700">{T("Take the money check-in to create a practical plan. Nothing is stored on a server, and your latest plan is saved only on this device/browser.", "Haz la revisión de dinero para crear un plan práctico. Nada se guarda en un servidor y tu plan más reciente se guarda solo en este dispositivo/navegador.")}</p>
+          <Link href={hrefWithLang("/assessment", lang)} className="mt-6 inline-block rounded-xl bg-brand-500 px-5 py-3 font-semibold text-white no-underline">{T("Start my money check-in", "Empezar mi revisión")}</Link>
         </div>
+      </section>
+    );
+  }
 
-        <div className="mt-3">
-          <span className="inline-block text-xs px-2 py-1 rounded-full bg-white border">
-            {langMeta.lang === "en" ? "Profile" : "Perfil"}: {copy.title}
-          </span>
-        </div>
-
-        {copy.summary && (
-          <p className="mt-4 text-slate-800 text-base leading-relaxed">
-            {copy.summary}
-          </p>
-        )}
-
-        <div className="mt-5 grid md:grid-cols-3 gap-4">
-          <Card title={langMeta.lang === "en" ? "Where you’re strong" : "Fortalezas"}>
-            <Bullets items={copy.strengths} />
-          </Card>
-          <Card title={langMeta.lang === "en" ? "What to focus on" : "En qué enfocarte"}>
-            <Bullets items={copy.focus} />
-          </Card>
-          <Card title={langMeta.lang === "en" ? "Quick wins" : "Victorias rápidas"}>
-            <Bullets items={copy.tips} />
-          </Card>
-        </div>
-      </div>
-
-      <div className="rounded-3xl bg-white border p-6 shadow">
-        <h2 className="text-xl md:text-2xl font-semibold text-ink-900">
-          {langMeta.lang === "en" ? "Your action plan" : "Tu plan de acción"}
-        </h2>
-        <p className="mt-2 text-slate-700">
-          {langMeta.lang === "en"
-            ? "Learn by doing. These short lessons and tools match your profile."
-            : "Aprende haciendo. Estas lecciones y herramientas se ajustan a tu perfil."}
-        </p>
-
-        <div className="mt-4 grid md:grid-cols-3 gap-4">
-          {recs.map((r: any) => (
-            <div key={r.slug || r.title_en || r.title} className="rounded-2xl border p-4 shadow-sm bg-slate-50">
-              <h3 className="font-semibold text-ink-900">
-                {langMeta.lang === "en" ? (r.title_en || r.title) : (r.title_es || r.title)}
-              </h3>
-              {r.summary_en && (
-                <p className="text-sm text-slate-700 mt-1">
-                  {langMeta.lang === "en" ? r.summary_en : (r.summary_es || r.summary_en)}
-                </p>
-              )}
-                <div className="mt-2">
-                  <Link href={hrefWithLang(r.href || "/tools", langMeta.lang)} className="text-sm underline">
-                    {langMeta.lang === "en" ? "Open guide →" : "Abrir guía →"}
-                  </Link>
-                </div>
-            </div>
-          ))}
-        </div>
-
-          <div className="mt-6 flex gap-3 flex-wrap">
-            <Link href={hrefWithLang("/tools", langMeta.lang)} className="px-4 py-2 rounded-xl border no-underline">
-              {langMeta.lang === "en" ? "Explore more tools" : "Explorar más herramientas"}
-            </Link>
-            <Link href={hrefWithLang("/glossary", langMeta.lang)} className="px-4 py-2 rounded-xl bg-brand-500 text-white no-underline">
-              {langMeta.lang === "en" ? "Jargon Breakdown" : "Glosario sin jerga"}
-            </Link>
-          </div>
-      </div>
-
-      <ActionPlan lang={langMeta.lang} metrics={metrics} hasAnswers={hasAnswers} retakeHref={retakeHref} />
-
-      <ResultsDebugPanel
-        show={debugVisible}
-        answers={answers}
-        sourceKey={sourceKey}
-        langMeta={langMeta}
-        metrics={metrics as any}
-      />
-    </section>
-  );
-}
-
-function Card({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-2xl bg-white border p-4 shadow-sm">
-      <h3 className="font-semibold text-ink-900">{title}</h3>
-      <div className="mt-2 text-sm text-slate-800">{children}</div>
-    </div>
-  );
-}
-
-function Bullets({ items }: { items: string[] }) {
-  if (!items || !items.length) return <p className="text-slate-600">—</p>;
-  return (
-    <ul className="list-disc ml-5 space-y-1">
-      {items.map((x, i) => (
-        <li key={i}>{x}</li>
-      ))}
-    </ul>
-  );
+  return <section className="py-6"><PathwayResult result={plan} lang={lang} onClear={clearPlan} /></section>;
 }
