@@ -5,14 +5,17 @@ import { t } from "@/lib/i18n";
 import LanguageToggle from "@/components/LanguageToggle";
 import MobileMenu from "@/components/MobileMenu";
 import { getLangFromQueryOrStorage, hrefWithLang, type Lang } from "@/lib/lang";
+import { loadLocalPlan } from "@/lib/localPlanStorage";
 
 export default function Nav() {
   const router = useRouter();
   const [locale, setLocale] = useState<Lang>((router.locale as Lang) || "en");
+  const [hasPlan, setHasPlan] = useState(false);
 
   useEffect(() => {
     const detected = typeof window !== "undefined" ? getLangFromQueryOrStorage() : (router.locale as Lang) || "en";
     setLocale(detected);
+    setHasPlan(Boolean(loadLocalPlan()));
   }, [router.locale]);
 
   return (
@@ -28,15 +31,11 @@ export default function Nav() {
         {/* Desktop links */}
         <div className="hidden md:flex items-center gap-5 text-sm">
             <Link href={hrefWithLang("/", locale)} className="no-underline text-ink-900 hover:text-brand-500">{t(locale,"nav.home")}</Link>
-            <div className="flex items-center gap-2">
-              <Link href={hrefWithLang("/assessment", locale)} className="no-underline text-ink-900 hover:text-brand-500">{t(locale,"nav.assessment")}</Link>
-              <Link href={hrefWithLang("/assessment-v2", locale)} className="text-sm opacity-80 hover:opacity-100">
-                {locale==="es" ? "Evaluación (Beta)" : "Assessment (Beta)"}
-              </Link>
-            </div>
+            <Link href={hrefWithLang("/assessment", locale)} className="no-underline text-ink-900 hover:text-brand-500">{locale==="es" ? "Revisión" : "Check-in"}</Link>
             <Link href={hrefWithLang("/resources", locale)} className="no-underline text-ink-900 hover:text-brand-500">{t(locale,"nav.resources")}</Link>
-            <Link href={hrefWithLang("/products", locale)} className="no-underline text-ink-900 hover:text-brand-500">{t(locale,"nav.products")}</Link>
-            <Link href={hrefWithLang("/glossary", locale)} className="no-underline text-ink-900 hover:text-brand-500">{t(locale,"nav.glossary")}</Link>
+            {hasPlan && <Link href={hrefWithLang("/results?saved=1", locale)} className="no-underline text-ink-900 hover:text-brand-500">{locale==="es" ? "Mi plan" : "My Plan"}</Link>}
+            <Link href={hrefWithLang("/tools", locale)} className="no-underline text-ink-900 hover:text-brand-500">{locale==="es" ? "Herramientas" : "Tools"}</Link>
+            <Link href={hrefWithLang("/glossary", locale)} className="no-underline text-ink-900 hover:text-brand-500">{locale==="es" ? "Traductor" : "Translator"}</Link>
           <LanguageToggle />
         </div>
 

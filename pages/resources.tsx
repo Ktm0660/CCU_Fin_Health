@@ -1,125 +1,56 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/router";
-import { resources, Resource, Area, RType, rTitle } from "@/data/resources";
-import ResourceCard from "@/components/ResourceCard";
+import { educationResources, pick, type PathwayId } from "@/data/guide";
 import { getLangFromQueryOrStorage, type Lang } from "@/lib/lang";
 
-const AREAS: { key: Area|"all"; en: string; es: string }[] = [
-  { key: "all", en: "All topics", es: "Todos los temas" },
-  { key: "stability", en: "Stability", es: "Estabilidad" },
-  { key: "habits", en: "Habits", es: "Hábitos" },
-  { key: "confidence", en: "Confidence", es: "Confianza" },
-  { key: "trust", en: "Trust & Access", es: "Confianza y acceso" },
-];
-
-const TYPES: { key: RType|"all"; en: string; es: string }[] = [
-  { key: "all", en: "All types", es: "Todos los tipos" },
-  { key: "explainer", en: "Explainers", es: "Explicadores" },
-  { key: "tool", en: "Tools", es: "Herramientas" },
-  { key: "download", en: "Downloads", es: "Descargas" },
-  { key: "video", en: "Videos", es: "Videos" },
-  { key: "product", en: "Products", es: "Productos" },
-];
+const categories = Array.from(new Map(educationResources.map(r => [r.category.en, r.category])).values());
 
 export default function ResourcesPage() {
   const router = useRouter();
-  const [locale, setLocale] = useState<Lang>((router.query.lang === "es" ? "es" : (router.locale as Lang)) || "en");
-  const [area, setArea] = useState<Area|"all">("all");
-  const [type, setType] = useState<RType|"all">("all");
-  const [q, setQ] = useState("");
+  const [lang, setLang] = useState<Lang>("en");
+  const [category, setCategory] = useState("all");
+  const [query, setQuery] = useState("");
+  const T = (en: string, es: string) => lang === "es" ? es : en;
 
-  useEffect(() => {
-    setLocale(getLangFromQueryOrStorage());
-  }, [router.locale, router.query.lang]);
+  useEffect(() => setLang(getLangFromQueryOrStorage()), [router.query.lang]);
 
-  const list = useMemo(() => {
-    let base = resources.filter(r => r.locale === "both" || r.locale === locale);
-    if (area !== "all") base = base.filter(r => r.area.includes(area));
-    if (type !== "all") base = base.filter(r => r.type === type);
-    if (q.trim()) {
-      const needle = q.trim().toLowerCase();
-      base = base.filter(r =>
-        rTitle(r, locale).toLowerCase().includes(needle) ||
-        r.summary_en.toLowerCase().includes(needle) ||
-        r.summary_es.toLowerCase().includes(needle) ||
-        r.tags.join(" ").toLowerCase().includes(needle)
-      );
-    }
-    base.sort((a,b)=> rTitle(a,locale).localeCompare(rTitle(b,locale)));
-    return base;
-  }, [area, type, q, locale]);
-
-  const T = (en:string, es:string)=> locale==="en" ? en : es;
+  const list = useMemo(() => educationResources.filter(r => {
+    const hay = `${pick(r.title, lang)} ${pick(r.summary, lang)} ${pick(r.category, lang)} ${r.relatedTerms.join(" ")}`.toLowerCase();
+    return (category === "all" || r.category.en === category) && (!query.trim() || hay.includes(query.toLowerCase()));
+  }), [category, query, lang]);
 
   return (
-    <section className="py-6 motion-safe:animate-fade-in">
-      <div className="max-w-3xl md:max-w-4xl mx-auto px-4">
-        <h1 className="text-[28px] md:text-4xl leading-tight font-bold text-ink-900 mt-1 mb-1.5">
-          {T("Tools & Resources", "Herramientas y recursos")}
-        </h1>
-        <p className="text-slate-700 mb-4 md:mb-6">
-          {T(
-            "Plain-language guides and tools. Filter by topic or type.",
-            "Guías y herramientas en lenguaje simple. Filtra por tema o tipo."
-          )}
-        </p>
+    <section className="py-6">
+      <div className="rounded-3xl border bg-white p-5 shadow md:p-7">
+        <p className="text-sm font-semibold uppercase tracking-wide text-brand-700">{T("Learning library", "Biblioteca de aprendizaje")}</p>
+        <h1 className="mt-2 text-3xl font-semibold text-ink-900">{T("Short guides for the job you need to do", "Guías cortas para lo que necesitas hacer")}</h1>
+        <p className="mt-3 text-slate-700">{T("No long lessons unless you want them. Start with what matters right now.", "Sin lecciones largas a menos que las quieras. Empieza con lo que importa ahora.")}</p>
+        <div className="mt-5 grid gap-3 md:grid-cols-[1fr_220px]">
+          <input value={query} onChange={e => setQuery(e.target.value)} className="rounded-xl border px-3 py-3" placeholder={T("Search guides or terms…", "Buscar guías o términos…")} />
+          <select value={category} onChange={e => setCategory(e.target.value)} className="rounded-xl border px-3 py-3">
+            <option value="all">{T("All categories", "Todas las categorías")}</option>
+            {categories.map(c => <option key={c.en} value={c.en}>{pick(c, lang)}</option>)}
+          </select>
+        </div>
+      </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-2xl border shadow-soft p-3 md:p-5 mb-4 md:mb-6 sticky top-[56px] z-10 md:static md:top-auto backdrop-blur supports-[backdrop-filter]:bg-white/80">
-          <div className="flex flex-col md:flex-row gap-3 md:items-end">
-            <div className="flex-1">
-              <label className="text-xs text-slate-600">{T("Topic","Tema")}</label>
-              <div className="flex gap-2 overflow-x-auto md:flex-wrap pb-1 -mx-1 px-1 mt-1">
-                {AREAS.map(a=>(
-                  <button
-                    key={a.key as string}
-                    onClick={()=>setArea(a.key as Area|"all")}
-                    className={`px-3 py-1.5 rounded-full border text-sm whitespace-nowrap transition ${
-                      area===a.key
-                        ? "bg-brand-500 text-white border-brand-500 shadow-soft"
-                        : "bg-white text-ink-900 hover:border-brand-300"
-                    }`}
-                  >
-                    {T(a.en,a.es)}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <label className="text-xs text-slate-600">{T("Type","Tipo")}</label>
-              <div className="flex gap-2 overflow-x-auto md:flex-wrap pb-1 -mx-1 px-1 mt-1">
-                {TYPES.map(t=>(
-                  <button
-                    key={t.key as string}
-                    onClick={()=>setType(t.key as RType|"all")}
-                    className={`px-3 py-1.5 rounded-full border text-sm whitespace-nowrap transition ${
-                      type===t.key
-                        ? "bg-ink-900 text-white border-ink-900 shadow-soft"
-                        : "bg-white text-ink-900 hover:border-brand-300"
-                    }`}
-                  >
-                    {T(t.en,t.es)}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="md:ml-auto">
-              <label className="text-xs text-slate-600">{T("Search","Buscar")}</label>
-              <input
-                value={q}
-                onChange={e=>setQ(e.target.value)}
-                placeholder={T("Search resources…","Buscar recursos…")}
-                className="mt-1 w-full md:w-64 px-3 py-2.5 rounded-xl border bg-white/90 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-300"
-              />
-            </div>
+      <div className="mt-5 grid gap-4 md:grid-cols-2">
+        {list.map(r => <article id={r.id} key={r.id} className="scroll-mt-24 rounded-3xl border bg-white p-5 shadow-soft">
+          <div className="flex flex-wrap gap-2 text-xs"><span className="rounded-full border bg-brand-50 px-2 py-1 text-brand-700">{r.format}</span><span className="rounded-full border bg-slate-50 px-2 py-1">{pick(r.estimatedTime, lang)}</span></div>
+          <h2 className="mt-3 text-xl font-semibold text-ink-900">{pick(r.title, lang)}</h2>
+          <p className="mt-2 text-slate-700">{pick(r.summary, lang)}</p>
+          <div className="mt-4 grid gap-3 text-sm">
+            <Info label={T("Plain meaning", "Significado simple")} body={pick(r.summary, lang)} />
+            <Info label={T("When this helps", "Cuándo ayuda")} body={T("Use this when the topic is affecting your next paycheck, your stress level, or a decision you need to make soon.", "Usa esto cuando el tema afecta tu próximo pago, tu nivel de estrés o una decisión cercana.")} />
+            <Info label={T("What to do now", "Qué hacer ahora")} body={pick(r.actionStep, lang)} />
+            <Info label={T("Common mistake to avoid", "Error común a evitar")} body={T("Trying to solve everything at once instead of choosing one next step you can actually complete.", "Intentar resolver todo de una vez en vez de elegir un paso que realmente puedas completar.")} />
+            <Info label={T("Question to ask", "Pregunta para usar")} body={T("What is the next practical step I can take with the information I have right now?", "¿Cuál es el próximo paso práctico que puedo tomar con la información que tengo ahora?")} />
           </div>
-        </div>
-
-        {/* List */}
-        <div className="grid md:grid-cols-3 gap-4">
-          {list.map(r=> <ResourceCard key={r.id} r={r} locale={locale} />)}
-        </div>
+          <div className="mt-4 flex flex-wrap gap-2">{r.relatedTerms.map(t => <span key={t} className="rounded-full bg-slate-100 px-2 py-1 text-xs">{t}</span>)}</div>
+          {r.format === "video" && <p className="mt-3 text-sm text-slate-600">{T("Video resource to be added.", "Recurso de video por agregar.")}</p>}
+        </article>)}
       </div>
     </section>
   );
 }
+function Info({ label, body }: { label: string; body: string }) { return <div><h3 className="font-semibold text-ink-900">{label}</h3><p className="text-slate-700">{body}</p></div>; }

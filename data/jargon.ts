@@ -39,7 +39,7 @@ export const terms: Term[] = [
     "itin", ["trust","access"],
     "ITIN",
     "ITIN",
-    "A taxpayer ID used if you don’t have a Social Security Number. Many credit unions can lend using an ITIN.",
+    "A taxpayer ID used for filing taxes and some financial paperwork.",
     "Identificación fiscal para quienes no tienen Seguro Social. Muchas cooperativas pueden prestar con ITIN."
   ),
   T(

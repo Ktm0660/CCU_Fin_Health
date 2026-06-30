@@ -1,4 +1,4 @@
-/** Tiny local progress helper (no login, private to device). */
+/** Tiny local progress helper (local browser progress). */
 const PREFIX = "ccu_lesson_";
 
 export function markDone(id: string) {

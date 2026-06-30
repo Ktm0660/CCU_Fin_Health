@@ -2,129 +2,32 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import Head from "next/head";
 import { useEffect, useState } from "react";
+import { getResourceById, getTermById } from "@/lib/guideScoring";
+import { loadLocalPlan, type LocalMoneyPlan } from "@/lib/localPlanStorage";
+import { pathways, pick } from "@/data/guide";
 import { getLangFromQueryOrStorage, hrefWithLang, type Lang } from "@/lib/lang";
+import SavedPlanBanner from "@/components/SavedPlanBanner";
 
 export default function Home() {
   const router = useRouter();
   const [lang, setLang] = useState<Lang>((router.query.lang === "es" ? "es" : (router.locale as Lang)) || "en");
-  const t = (en: string, es: string) => (lang === "en" ? en : es);
-  const langToggle = lang === "en" ? "es" : "en";
-
-  useEffect(() => {
-    setLang(getLangFromQueryOrStorage());
-  }, [router.locale, router.query.lang]);
-
-  return (
-    <>
-      <Head>
-        <title>{t("Feel confident about your money again | Connections", "Vuelve a sentir confianza con tu dinero | Connections")}</title>
-        <meta name="description" content={t(
-          "Take our 3-minute Financial Health Checkup — no judgment, just clarity and small steps forward.",
-          "Haz nuestra evaluación de 3 minutos — sin juicios, con claridad y pasos simples."
-        )} />
-      </Head>
-
-      <main className="min-h-screen">
-        {/* HERO with softer rhythm on mobile */}
-        <section className="relative overflow-hidden pt-3 md:pt-6">
-          <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-brand-50 via-white to-white" />
-          <div className="relative mx-auto max-w-6xl px-4 pb-10 md:pb-16">
-            <div className="grid md:grid-cols-2 gap-10 items-center">
-              <div>
-                <span className="inline-block rounded-full bg-white border px-3 py-1 text-xs md:text-sm text-slate-700">
-                  {t("Judgment-free & private", "Sin juicios y privado")}
-                </span>
-
-                <h1 className="mt-5 font-semibold text-[28px] leading-[1.25] md:text-5xl text-ink-900 motion-safe:animate-slide-up">
-                  {t("Feel confident about your money again.", "Vuelve a sentir confianza con tu dinero.")}
-                </h1>
-
-                <p className="mt-4 text-slate-700 text-[16px] leading-relaxed md:text-lg md:leading-relaxed motion-safe:animate-fade-in">
-                  {t(
-                    "Take our quick Financial Health Checkup—get plain-language insights and a simple action path.",
-                    "Haz nuestra Evaluación de Salud Financiera—recibe ideas claras y una ruta de acción simple."
-                  )}
-                </p>
-
-                {/* Full-width primary CTA on mobile */}
-                <div className="mt-7 flex flex-col sm:flex-row gap-3">
-                    <Link
-                      href={hrefWithLang("/assessment", lang)}
-                      className="btn btn-secondary w-full sm:w-auto px-6 py-4 text-base no-underline shadow-soft active:scale-[0.99]"
-                    >
-                      {t("Start my free checkup", "Empezar mi evaluación gratis")}
-                    </Link>
-                    <Link
-                      href={hrefWithLang(router.asPath, langToggle)}
-                      className="inline-flex items-center justify-center rounded-xl border px-6 py-4 no-underline text-ink-900 bg-white hover:bg-brand-50 w-full sm:w-auto"
-                    >
-                      {langToggle === "es" ? "Español" : "English"}
-                  </Link>
-                </div>
-
-                <p className="mt-3 text-xs text-slate-600">
-                  {t("Takes about 3 minutes · No credit pull · No sales pitch", "Toma ~3 minutos · Sin consultar crédito · Sin ventas")}
-                </p>
-
-                {/* INFO TILES — more breathing room on mobile */}
-                <div className="mt-9 grid sm:grid-cols-3 gap-3 md:gap-4">
-                  <div
-                    className="bg-white border rounded-2xl p-4 shadow-soft motion-safe:animate-slide-up stagger"
-                    style={{ animationDelay: "80ms", background: "linear-gradient(145deg, rgba(11,20,67,0.04), rgba(0,106,78,0.02))" }}
-                  >
-                    <h3 className="font-semibold text-ink-900">{t("Clarity", "Claridad")}</h3>
-                    <p className="text-sm text-slate-700 mt-1">{t("Jargon-free help and tools you can actually use.", "Ayuda sin jerga y herramientas que realmente puedes usar.")}</p>
-                  </div>
-                  <div
-                    className="bg-white border rounded-2xl p-4 shadow-soft motion-safe:animate-slide-up stagger"
-                    style={{ animationDelay: "140ms", background: "linear-gradient(145deg, rgba(11,20,67,0.035), rgba(0,106,78,0.02))" }}
-                  >
-                    <h3 className="font-semibold text-ink-900">{t("Made for communities", "Hecho para comunidades")}</h3>
-                    <p className="text-sm text-slate-700 mt-1">{t("Mobile branch + bilingual content to meet you where you are.", "Sucursal móvil + contenido bilingüe para encontrarte donde estás.")}</p>
-                  </div>
-                  <div
-                    className="bg-white border rounded-2xl p-4 shadow-soft motion-safe:animate-slide-up stagger"
-                    style={{ animationDelay: "200ms", background: "linear-gradient(145deg, rgba(11,20,67,0.03), rgba(0,106,78,0.02))" }}
-                  >
-                    <h3 className="font-semibold text-ink-900">{t("Simple next steps", "Pasos simples")}</h3>
-                    <p className="text-sm text-slate-700 mt-1">{t("One small win this week beats a perfect plan later.", "Un pequeño logro esta semana vale más que un plan perfecto después.")}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right column testimonial */}
-              <div className="md:pl-8">
-                <div className="rounded-3xl border bg-white shadow p-5 md:p-6">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-100 border text-brand-700 font-semibold">AC</div>
-                    <div>
-                      <p className="font-medium text-ink-900">{t("“I finally have a simple plan.”", "“Por fin tengo un plan simple.”")}</p>
-                      <p className="text-xs text-slate-600">{t("Member in rural Idaho", "Socia en Idaho rural")}</p>
-                    </div>
-                  </div>
-                  <div className="mt-5 grid grid-cols-3 gap-3">
-                    <Metric label={t("Habits", "Hábitos")} value="On Track" />
-                    <Metric label={t("Confidence", "Confianza")} value={t("Progress", "Tomando ritmo")} />
-                    <Metric label={t("Stability", "Estabilidad")} value={t("Getting Started", "Empezando")} />
-                  </div>
-                    <Link href={hrefWithLang("/assessment", lang)} className="mt-6 inline-flex w-full items-center justify-center rounded-xl bg-brand-500 px-4 py-3 text-white no-underline shadow-soft hover:brightness-110 transition">
-                      {t("See your snapshot", "Conoce tu panorama")}
-                    </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      </main>
-    </>
-  );
+  const [plan, setPlan] = useState<LocalMoneyPlan | null>(null);
+  const T = (en: string, es: string) => (lang === "es" ? es : en);
+  useEffect(() => { setLang(getLangFromQueryOrStorage()); setPlan(loadLocalPlan()); }, [router.locale, router.query.lang]);
+  const nextTool = plan?.recommendedToolId;
+  const learning = plan?.recommendedResourceIds?.[0] ? getResourceById(plan.recommendedResourceIds[0]) : null;
+  const terms = plan?.recommendedTermIds?.slice(0, 4).map(getTermById).filter(Boolean) ?? [];
+  return <><Head><title>{T("Find your next money step | Connections", "Encuentra tu próximo paso de dinero | Connections")}</title></Head><main className="min-h-screen py-6">
+    <SavedPlanBanner lang={lang} onClear={() => setPlan(null)} />
+    <section className="mt-6 rounded-3xl border bg-gradient-to-br from-brand-50 via-white to-white p-5 shadow md:p-8">
+      <p className="text-sm font-semibold uppercase tracking-wide text-brand-700">{T("Personalized financial action tool", "Herramienta personalizada de acción financiera")}</p>
+      <h1 className="mt-3 text-4xl font-semibold leading-tight text-ink-900 md:text-5xl">{plan ? T("Your plan is ready when you are", "Tu plan está listo cuando tú lo estés") : T("Find your next money step", "Encuentra tu próximo paso de dinero")}</h1>
+      <p className="mt-4 max-w-2xl text-lg leading-relaxed text-slate-700">{T("Understand what is happening with your money, choose practical next steps, use focused tools, and learn the terms that matter right now.", "Entiende qué pasa con tu dinero, elige pasos prácticos, usa herramientas enfocadas y aprende los términos que importan ahora.")}</p>
+      <div className="mt-7 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><Link href={hrefWithLang(plan ? "/results?saved=1" : "/assessment", lang)} className="rounded-xl bg-brand-500 px-5 py-4 text-center font-semibold text-white no-underline">{plan ? T("Resume my plan", "Continuar mi plan") : T("Start my money check-in", "Empezar mi revisión")}</Link><Link href={hrefWithLang("/resources", lang)} className="rounded-xl border bg-white px-5 py-4 text-center font-semibold no-underline">{T("View learning library", "Ver biblioteca")}</Link><Link href={hrefWithLang("/glossary", lang)} className="rounded-xl border bg-white px-5 py-4 text-center font-semibold no-underline">{T("Translate financial terms", "Traducir términos")}</Link><Link href={hrefWithLang("/tools", lang)} className="rounded-xl border bg-white px-5 py-4 text-center font-semibold no-underline">{T("Use tools", "Usar herramientas")}</Link></div>
+    </section>
+    {plan && <section className="mt-6 grid gap-4 md:grid-cols-2"><Card title={T("Recommended next tool", "Herramienta recomendada")} body={toolName(nextTool, lang)} href={hrefWithLang(`/tools?tool=${nextTool}`, lang)} /><Card title={T("Recommended learning", "Aprendizaje recomendado")} body={learning ? pick(learning.title, lang) : pick(pathways[plan.primaryPathway].name, lang)} href={hrefWithLang("/resources", lang)} /><Card title={T("Recent focus areas", "Áreas de enfoque recientes")} body={plan.impactAreas.slice(0, 3).map(a => pick(pathways[a.pathwayId].name, lang)).join(" • ")} href={hrefWithLang("/results?saved=1", lang)} /><Card title={T("Terms to understand", "Términos para entender")} body={terms.map(t => lang === "es" ? t!.spanishTerm : t!.term).join(" • ")} href={hrefWithLang("/glossary", lang)} /></section>}
+    {!plan && <section className="mt-6 grid gap-4 md:grid-cols-2">{[[T("Start with what matters most", "Empieza con lo que importa"), T("Your answers help personalize your plan without forcing you into a score.", "Tus respuestas ayudan a personalizar tu plan sin reducirlo a un puntaje.")], [T("Use practical tools", "Usa herramientas prácticas"), T("Plan bills, organize debt, build a buffer, check credit, or prepare a conversation.", "Planifica cuentas, organiza deuda, crea un colchón, revisa crédito o prepara una conversación.")]].map(([title, body]) => <div key={title} className="rounded-2xl border bg-white p-5 shadow-soft"><h2 className="font-semibold text-ink-900">{title}</h2><p className="mt-2 text-sm text-slate-700">{body}</p></div>)}</section>}
+  </main></>;
 }
-
-function Metric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border p-3 text-sm shadow-soft motion-safe:animate-fade-in">
-      <div className="text-slate-600">{label}</div>
-      <div className="font-semibold text-ink-900">{value}</div>
-    </div>
-  );
-}
+function Card({ title, body, href }: { title: string; body: string; href: string }) { return <Link href={href} className="rounded-2xl border bg-white p-5 no-underline shadow-soft"><h2 className="font-semibold text-ink-900">{title}</h2><p className="mt-2 text-sm text-slate-700">{body}</p></Link>; }
+function toolName(id: string | undefined, lang: Lang) { const names: Record<string, { en: string; es: string }> = { "bill-calendar": { en: "Bill calendar / paycheck planner", es: "Calendario de cuentas / plan de pago" }, "debt-payoff": { en: "Debt payoff planner", es: "Planificador de deuda" }, "emergency-buffer": { en: "Buffer planner", es: "Planificador de colchón" }, "credit-checklist": { en: "Credit checklist", es: "Lista de crédito" }, "conversation-script": { en: "Conversation script builder", es: "Creador de frases" } }; return id ? names[id]?.[lang] ?? id : ""; }
